@@ -1,7 +1,7 @@
 import { HttpStatus, Injectable } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { InjectRepository } from '@nestjs/typeorm';
-import { compare, hash, hashSync } from 'bcryptjs';
+import { compare, hash } from 'bcryptjs';
 import { Repository } from 'typeorm';
 import {
   errorsException,
@@ -19,7 +19,8 @@ const BCRYPT_COST = 10;
  * Hash giả để so khi email không tồn tại: login mất cùng thời gian dù email
  * có hay không, kẻ dò không đoán được email nào đã đăng ký qua thời gian phản hồi.
  */
-const DUMMY_HASH = hashSync('not-a-real-password', BCRYPT_COST);
+// Tính sẵn (cost = BCRYPT_COST, mật khẩu ngẫu nhiên đã bỏ): không chặn event loop lúc import.
+const DUMMY_HASH = '$2b$10$hQdrVIjDsLNzdvTVd0ffwOM7dJ/ORlIrI2ydpUhQ/5JwsfRtUq3dC';
 
 /** Email không phân biệt hoa thường: `Jake@x.com` và `jake@x.com` là một người. */
 export const normalizeEmail = (email: string) => email.trim().toLowerCase();
