@@ -1,0 +1,19 @@
+{
+  "isDefined": "không được để trống",
+  "isNotEmpty": "không được để trống",
+  "isString": "không hợp lệ",
+  "isEmail": "không hợp lệ",
+  "minLength": "quá ngắn (tối thiểu {constraint1} ký tự)",
+  "maxLength": "quá dài (tối đa {constraint1} ký tự)",
+  "isLength": "độ dài không đúng (từ {constraint1} đến {constraint2} ký tự)",
+  "isObject": "không hợp lệ",
+  "nestedValidation": "không hợp lệ",
+  "matches": "không hợp lệ",
+  "isByteLength": "quá dài (tối đa {constraint2} byte)",
+  "isArray": "không hợp lệ",
+  "arrayMaxSize": "quá nhiều (tối đa {constraint1} phần tử)",
+  "isInt": "phải là số nguyên",
+  "min": "phải lớn hơn hoặc bằng {constraint1}",
+  "max": "phải nhỏ hơn hoặc bằng {constraint1}",
+  "isUrl": "không hợp lệ"
+}
