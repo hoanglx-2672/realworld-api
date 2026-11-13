@@ -121,15 +121,29 @@ describe('sổ theo dõi vấn đề (e2e)', () => {
     it.each(['/api/user', '/api/articles?limit=1', '/api/tags'])(
       'GET %s → Cache-Control: no-store',
       async (path) => {
-        const res = await http().get(path).set(auth(me.token));
+        const res = await http().get(path).set(auth(me.token)).expect(200);
         expect(res.headers['cache-control']).toBe('no-store');
       },
     );
 
-    it('POST /api/users/login (có token) → Cache-Control: no-store', async () => {
+    it('POST /api/users/login thành công (response chứa token) → Cache-Control: no-store', async () => {
+      const user = await registerUser(app, 'nc');
       const res = await http()
         .post('/api/users/login')
-        .send({ user: { email: 'x@y.z', password: 'password123' } });
+        .send({
+          user: { email: `${user.username}@test.com`, password: 'password123' },
+        })
+        .expect(200);
+      expect(res.body.user.token).toEqual(expect.any(String));
+      expect(res.headers['cache-control']).toBe('no-store');
+    });
+
+    it('ISS-24 JSON hỏng (lỗi body-parser, trước middleware) → vẫn có Cache-Control: no-store', async () => {
+      const res = await http()
+        .post('/api/users/login')
+        .set('Content-Type', 'application/json')
+        .send('{"user": ')
+        .expect(400);
       expect(res.headers['cache-control']).toBe('no-store');
     });
   });
