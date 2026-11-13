@@ -471,5 +471,29 @@ describe('articles (e2e)', () => {
       expect(after.body.article.updatedAt).not.toBe(before.updatedAt);
       expect(after.body.article.createdAt).toBe(before.createdAt);
     });
+
+    // Nhận xét review PR #8 (GitHub): description/body toàn khoảng trắng
+    it.each([
+      ['description', '   '],
+      ['body', '\n\t '],
+    ])(
+      "PR8-02 POST %s toàn khoảng trắng → 422 can't be blank",
+      async (field, value) => {
+        const res = await create(newArticle({ [field]: value })).expect(422);
+        expect(res.body.errors[field]).toEqual(["can't be blank"]);
+      },
+    );
+
+    it('PR8-02 PUT body toàn khoảng trắng → 422; body có khoảng trắng hai đầu giữ nguyên', async () => {
+      const { slug } = (await create(newArticle()).expect(201)).body.article;
+      const put = (body: string) =>
+        http()
+          .put(`/api/articles/${slug}`)
+          .set('Authorization', `Token ${author.token}`)
+          .send({ article: { body } });
+      await put('  ').expect(422);
+      const ok = await put('  # Tiêu đề\n').expect(200);
+      expect(ok.body.article.body).toBe('  # Tiêu đề\n');
+    });
   });
 });

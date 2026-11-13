@@ -8,6 +8,7 @@ import {
 import {
   IfPresent,
   NoNulChar,
+  NotBlank,
   Trim,
   TagNames,
   Wrapped,
@@ -34,14 +35,14 @@ export class UpdateArticleDto {
   title?: string;
 
   @IfPresent()
-  @IsNotEmpty()
+  @NotBlank()
   @IsString()
   @MaxLength(DESCRIPTION_MAX_LENGTH)
   @NoNulChar()
   description?: string;
 
   @IfPresent()
-  @IsNotEmpty()
+  @NotBlank()
   @IsString()
   @MaxLength(BODY_MAX_LENGTH)
   @NoNulChar()

@@ -6,7 +6,13 @@ import {
   IsString,
   MaxLength,
 } from 'class-validator';
-import { NoNulChar, Trim, TagNames, Wrapped } from '../../common/validators.js';
+import {
+  NoNulChar,
+  NotBlank,
+  Trim,
+  TagNames,
+  Wrapped,
+} from '../../common/validators.js';
 
 export const TITLE_MAX_LENGTH = 255;
 export const DESCRIPTION_MAX_LENGTH = 1000;
@@ -22,13 +28,13 @@ export class CreateArticleDto {
   @NoNulChar()
   title: string;
 
-  @IsNotEmpty()
+  @NotBlank()
   @IsString()
   @MaxLength(DESCRIPTION_MAX_LENGTH)
   @NoNulChar()
   description: string;
 
-  @IsNotEmpty()
+  @NotBlank()
   @IsString()
   @MaxLength(BODY_MAX_LENGTH)
   @NoNulChar()

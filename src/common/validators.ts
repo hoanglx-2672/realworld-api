@@ -4,6 +4,7 @@ import {
   IsDefined,
   IsObject,
   Matches,
+  ValidateBy,
   ValidateIf,
   ValidateNested,
   type ValidationOptions,
@@ -13,6 +14,25 @@ import {
 export const Trim = () =>
   Transform(({ value }: { value: unknown }) =>
     typeof value === 'string' ? value.trim() : value,
+  );
+
+/**
+ * Như @IsNotEmpty nhưng chuỗi toàn khoảng trắng ("   ", "\n\t") cũng tính là rỗng — dùng cho
+ * field không `@Trim()` vì nội dung cần giữ nguyên (description, body markdown).
+ * Cùng tên constraint `isNotEmpty` → cùng câu "can't be blank" và cùng thứ tự ưu tiên lỗi.
+ */
+export const NotBlank = (options?: ValidationOptions) =>
+  ValidateBy(
+    {
+      name: 'isNotEmpty',
+      validator: {
+        validate: (value: unknown) =>
+          typeof value === 'string'
+            ? value.trim() !== ''
+            : value !== '' && value !== null && value !== undefined,
+      },
+    },
+    options,
   );
 
 /** Postgres không lưu được ký tự NUL trong text/varchar (lỗi 22021 → 500). */
