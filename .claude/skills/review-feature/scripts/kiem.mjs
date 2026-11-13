@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 // Cổng kiểm trước khi mở PR cho realworld-api.
 // Chạy từ gốc repo:  node .claude/skills/review-feature/scripts/kiem.mjs [--base=main] [--nhanh]
-//   --base=<nhánh>  nhánh để so diff (mặc định: main, không có thì master)
+//   --base=<nhánh>  nhánh để so diff (mặc định: main, không có thì master; PR xếp chồng: nhánh của PR trước)
 //   --nhanh         bỏ e2e và kiểm migration (khi đang sửa dở, không phải lần chốt)
 // Thoát mã 1 nếu có mục FAIL. WARN không chặn nhưng phải nêu trong PR.
 import { spawnSync } from 'node:child_process';
@@ -38,8 +38,16 @@ if (!existsSync('package.json') || !existsSync('src')) {
 const laGit = chay('git rev-parse --is-inside-work-tree').ok;
 let base = null;
 if (laGit) {
-  const ung = [args.base, 'main', 'master'].filter((b) => typeof b === 'string');
-  base = ung.find((b) => chay(`git rev-parse --verify --quiet ${b}`).ok) ?? null;
+  if (args.base !== undefined) {
+    // PR xếp chồng: base là nhánh của PR trước, phải truyền đúng — sai thì dừng hẳn.
+    if (typeof args.base !== 'string' || !chay(`git rev-parse --verify --quiet ${args.base}`).ok) {
+      console.error(`--base không hợp lệ: ${args.base}`);
+      process.exit(2);
+    }
+    base = args.base;
+  } else {
+    base = ['main', 'master'].find((b) => chay(`git rev-parse --verify --quiet ${b}`).ok) ?? null;
+  }
 
   const envTracked = chay('git ls-files --error-unmatch .env').ok;
   ghi('.env không bị commit', envTracked ? 'FAIL' : 'PASS', envTracked ? 'chạy: git rm --cached .env' : '');
