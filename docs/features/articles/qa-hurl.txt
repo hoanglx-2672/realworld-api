@@ -1,0 +1,112 @@
+# 2026-11-12T02:38:38.738Z  host=http://localhost:3000  uid=179445111603924076
+# npx -y @orangeopensource/hurl --test --jobs 1 --continue-on-error --variable host=http://localhost:3000 --variable uid=179445111603924076 docs\realworld-spec\hurl\articles.hurl docs\realworld-spec\hurl\feed.hurl docs\realworld-spec\hurl\pagination.hurl docs\realworld-spec\hurl\errors_articles.hurl
+
+Success docs\realworld-spec\hurl\articles.hurl (17 request(s) in 339 ms)
+error: Assert status code
+   --> docs\realworld-spec\hurl\feed.hurl:30:6
+    |
+    | GET {{host}}/api/articles/feed
+    | ...
+ 30 | HTTP 200
+    |      ^^^ actual value is <404>
+    |
+
+error: Assert status code
+   --> docs\realworld-spec\hurl\feed.hurl:38:6
+    |
+    | POST {{host}}/api/profiles/feedc_{{uid}}/follow
+    | ...
+ 38 | HTTP 200
+    |      ^^^ actual value is <404>
+    |
+
+error: Assert status code
+   --> docs\realworld-spec\hurl\feed.hurl:73:6
+    |
+    | GET {{host}}/api/articles/feed
+    | ...
+ 73 | HTTP 200
+    |      ^^^ actual value is <404>
+    |
+
+error: Assert status code
+   --> docs\realworld-spec\hurl\feed.hurl:93:6
+    |
+    | GET {{host}}/api/articles/feed?limit=1
+    | ...
+ 93 | HTTP 200
+    |      ^^^ actual value is <404>
+    |
+
+error: Assert status code
+   --> docs\realworld-spec\hurl\feed.hurl:112:6
+    |
+    | GET {{host}}/api/articles/feed?limit=1&offset=1
+    | ...
+112 | HTTP 200
+    |      ^^^ actual value is <404>
+    |
+
+error: Assert status code
+   --> docs\realworld-spec\hurl\feed.hurl:129:6
+    |
+    | DELETE {{host}}/api/profiles/feedc_{{uid}}/follow
+    | ...
+129 | HTTP 200
+    |      ^^^ actual value is <404>
+    |
+
+Failure docs\realworld-spec\hurl\feed.hurl (12 request(s) in 243 ms)
+Success docs\realworld-spec\hurl\pagination.hurl (7 request(s) in 135 ms)
+error: Assert status code
+   --> docs\realworld-spec\hurl\errors_articles.hurl:39:6
+    |
+    | GET {{host}}/api/articles/feed
+ 39 | HTTP 401
+    |      ^^^ actual value is <404>
+    |
+
+error: Assert status code
+   --> docs\realworld-spec\hurl\errors_articles.hurl:45:6
+    |
+    | POST {{host}}/api/articles/some-slug/favorite
+ 45 | HTTP 401
+    |      ^^^ actual value is <404>
+    |
+
+error: Assert status code
+   --> docs\realworld-spec\hurl\errors_articles.hurl:51:6
+    |
+    | DELETE {{host}}/api/articles/some-slug/favorite
+ 51 | HTTP 401
+    |      ^^^ actual value is <404>
+    |
+
+error: Assert failure
+   --> docs\realworld-spec\hurl\errors_articles.hurl:156:0
+    |
+    | POST {{host}}/api/articles/unknown-slug-{{uid}}/favorite
+    | ...
+156 | jsonpath "$.errors.article[0]" == "not found"
+    |   actual:   none
+    |   expected: string <not found>
+    |
+
+error: Assert failure
+   --> docs\realworld-spec\hurl\errors_articles.hurl:163:0
+    |
+    | DELETE {{host}}/api/articles/unknown-slug-{{uid}}/favorite
+    | ...
+163 | jsonpath "$.errors.article[0]" == "not found"
+    |   actual:   none
+    |   expected: string <not found>
+    |
+
+Failure docs\realworld-spec\hurl\errors_articles.hurl (20 request(s) in 179 ms)
+--------------------------------------------------------------------------------
+Executed files:    4
+Executed requests: 56 (61.7/s)
+Succeeded files:   2 (50.0%)
+Failed files:      2 (50.0%)
+Duration:          907 ms (0h:0m:0s:907ms)
+

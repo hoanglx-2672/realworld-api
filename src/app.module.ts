@@ -14,6 +14,7 @@ import {
   QueryLocaleResolver,
 } from '@nestjs/i18n';
 import { TypeOrmModule } from '@nestjs/typeorm';
+import { ArticlesModule } from './articles/articles.module.js';
 import { AllExceptionsFilter } from './common/all-exceptions.filter.js';
 import { NoStoreMiddleware } from './common/no-store.middleware.js';
 import { typeOrmOptions } from './database/typeorm.options.js';
@@ -45,6 +46,7 @@ import { UsersModule } from './users/users.module.js';
     }),
 
     UsersModule,
+    ArticlesModule,
   ],
   providers: [
     // Filter toàn cục đăng ký qua DI (không dùng app.useGlobalFilters) để tiêm được
