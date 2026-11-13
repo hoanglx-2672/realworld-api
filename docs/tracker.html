@@ -1,0 +1,354 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Sổ theo dõi vấn đề</title>
+<style>
+:root{
+  --bg:#fbfaf7; --surface:#ffffff; --surface-2:#f3f1ec; --text:#1d1c1a; --muted:#6b6862;
+  --line:#e4e0d8; --accent:#c2410c; --code-bg:#f5f3ee; --code-text:#2b2925;
+  --done:#15803d; --done-soft:#e7f5ec; --open:#b45309; --open-soft:#fff4e0;
+  --wait:#7c3aed; --wait-soft:#f1eafe; --skip:#57534e; --skip-soft:#efedea;
+  --hi:#b91c1c; --hi-soft:#fdecec;
+  --mono: ui-monospace, "Cascadia Code", "JetBrains Mono", Consolas, monospace;
+  --sans: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#151412; --surface:#1d1c19; --surface-2:#25231f; --text:#ece9e2; --muted:#a29e95;
+    --line:#34312b; --accent:#fb923c; --code-bg:#211f1b; --code-text:#e6e2d9;
+    --done:#4ade80; --done-soft:#173022; --open:#fbbf24; --open-soft:#33280f;
+    --wait:#c4b5fd; --wait-soft:#2a2140; --skip:#a8a29e; --skip-soft:#292524;
+    --hi:#f87171; --hi-soft:#3a1717;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#151412; --surface:#1d1c19; --surface-2:#25231f; --text:#ece9e2; --muted:#a29e95;
+  --line:#34312b; --accent:#fb923c; --code-bg:#211f1b; --code-text:#e6e2d9;
+  --done:#4ade80; --done-soft:#173022; --open:#fbbf24; --open-soft:#33280f;
+  --wait:#c4b5fd; --wait-soft:#2a2140; --skip:#a8a29e; --skip-soft:#292524;
+  --hi:#f87171; --hi-soft:#3a1717;
+  color-scheme: dark;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);font:15px/1.65 var(--sans)}
+a{color:var(--accent);text-decoration:none} a:hover{text-decoration:underline}
+code{font:13px var(--mono);background:var(--code-bg);color:var(--code-text);padding:1px 5px;border-radius:4px;word-break:break-word}
+.wrap{max-width:1040px;margin:0 auto;padding:28px 16px 80px}
+h1{font-size:26px;margin:0 0 4px}
+.sub{color:var(--muted);margin:0 0 18px}
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin:18px 0}
+.stat{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:12px 14px}
+.stat b{display:block;font-size:26px;line-height:1.1}
+.stat span{color:var(--muted);font-size:13px}
+.stat.done b{color:var(--done)} .stat.open b{color:var(--open)} .stat.wait b{color:var(--wait)} .stat.skip b{color:var(--skip)}
+.checks{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:12px 16px;margin:0 0 18px;font-size:14px}
+.checks table{border-collapse:collapse;width:100%}
+.checks td{padding:4px 8px;border-bottom:1px solid var(--line);vertical-align:top}
+.checks tr:last-child td{border-bottom:0}
+.checks td:first-child{color:var(--muted);white-space:nowrap}
+.toolbar{position:sticky;top:0;background:var(--bg);padding:10px 0;z-index:2;display:flex;flex-wrap:wrap;gap:8px;align-items:center;border-bottom:1px solid var(--line)}
+.toolbar input{flex:1 1 220px;font:14px var(--sans);padding:8px 10px;border-radius:8px;border:1px solid var(--line);background:var(--surface);color:var(--text)}
+.chip{font:13px var(--sans);padding:6px 10px;border-radius:999px;border:1px solid var(--line);background:var(--surface);color:var(--text);cursor:pointer}
+.chip[aria-pressed="true"]{background:var(--text);color:var(--bg);border-color:var(--text)}
+.card{background:var(--surface);border:1px solid var(--line);border-left:4px solid var(--line);border-radius:10px;padding:14px 16px;margin:12px 0}
+.card.done{border-left-color:var(--done)} .card.open{border-left-color:var(--open)}
+.card.wait{border-left-color:var(--wait)} .card.skip{border-left-color:var(--skip)}
+.head{display:flex;flex-wrap:wrap;gap:8px;align-items:baseline}
+.id{font:600 13px var(--mono);color:var(--accent)}
+.title{font-weight:600;font-size:16px;flex:1 1 300px}
+.tag{font-size:12px;padding:2px 8px;border-radius:999px;white-space:nowrap}
+.st-done{background:var(--done-soft);color:var(--done)} .st-open{background:var(--open-soft);color:var(--open)}
+.st-wait{background:var(--wait-soft);color:var(--wait)} .st-skip{background:var(--skip-soft);color:var(--skip)}
+.sev-cao{background:var(--hi-soft);color:var(--hi)} .sev-tb{background:var(--open-soft);color:var(--open)} .sev-thap{background:var(--surface-2);color:var(--muted)}
+.meta{color:var(--muted);font-size:13px;margin:4px 0 8px}
+dl{margin:0;display:grid;grid-template-columns:110px 1fr;gap:4px 12px;font-size:14px}
+dt{color:var(--muted)} dd{margin:0}
+.empty{color:var(--muted);padding:30px 0;text-align:center}
+h2{font-size:19px;margin:34px 0 8px}
+.log li{margin:6px 0}
+.theme{position:fixed;right:14px;bottom:14px;font:13px var(--sans);padding:6px 10px;border-radius:8px;border:1px solid var(--line);background:var(--surface);color:var(--text);cursor:pointer}
+@media (max-width:640px){ dl{grid-template-columns:1fr} dt{margin-top:6px} h1{font-size:22px} }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Sổ theo dõi vấn đề</h1>
+  <p class="sub">Mọi lỗi, nợ kỹ thuật và cảnh báo đã phát hiện ở realworld-api (review, QA, Sunlint), kèm trạng thái và test chứng minh. Cập nhật lần cuối: <b id="updated"></b>. · <a href="driver.html">Hướng dẫn đọc dự án</a> · <a href="hoc-nestjs.html">6 kiến thức trọng tâm</a></p>
+
+  <div class="stats" id="stats"></div>
+
+  <div class="checks">
+    <table>
+      <tr><td>Cổng kiểm</td><td>7 PASS · 0 FAIL (lint, typecheck, unit, e2e, migration, Sunlint)</td></tr>
+      <tr><td>Test</td><td>e2e <b>136/136</b> · unit <b>22/22</b></td></tr>
+      <tr><td>Hurl chính thức</td><td>auth 43/43 · articles 17/17 · pagination 7/7 · tags 4/4 · errors_articles 15/20 (5 hỏng thuộc Feed/Favorite chưa làm) · feed 0/12 (chưa làm)</td></tr>
+      <tr><td>Sunlint</td><td>0 lỗi · 30 cảnh báo · điểm 73.2 (ban đầu 31 cảnh báo, 65.5 điểm)</td></tr>
+    </table>
+  </div>
+
+  <div class="toolbar">
+    <input id="q" type="search" placeholder="Tìm theo mã, nội dung, file… (gõ không dấu được)" aria-label="Tìm">
+    <span id="chips"></span>
+  </div>
+  <div id="list"></div>
+
+  <h2>Nhật ký</h2>
+  <ul class="log" id="log"></ul>
+</div>
+<button class="theme" id="theme" type="button">Giao diện</button>
+
+<script>
+var UPDATED = '2026-11-12';
+
+/* status: done = đã sửa · open = còn mở · wait = chờ bạn quyết · skip = không sửa (có lý do)
+   sev: cao | tb | thap */
+var ISSUES = [
+  { id: 'ISS-01', status: 'done', sev: 'tb', title: 'Lỗi ngoài validation không theo định dạng {"errors": …}',
+    source: 'QA-auth-01 · review toàn bộ 1.4', date: '2026-11-12',
+    problem: 'JSON hỏng trả 400 {"statusCode","message","error"} của Nest; route không tồn tại trả 404 dạng mặc định; lỗi không lường trước trả 500 không ghi log.',
+    fix: 'Filter toàn cục AllExceptionsFilter (đăng ký APP_FILTER): giữ nguyên lỗi đã đúng dạng; JSON hỏng → 400 {"errors":{"body":["is malformed"]}}; route lạ → 404 {"errors":{"path":["not found"]}}; 500 → câu chung + log kèm stack. Lỗi JSON xảy ra trước middleware i18n nên filter tự chọn ngôn ngữ theo ?lang → x-lang → Accept-Language.',
+    files: ['src/common/all-exceptions.filter.ts', 'src/app.module.ts', 'src/i18n/en/errors.json'],
+    tests: 'test/issues.e2e-spec.ts › ISS-01 · src/common/all-exceptions.filter.spec.ts' },
+
+  { id: 'ISS-02', status: 'done', sev: 'thap', title: 'GET /api/tags liệt kê cả tag không còn bài nào',
+    source: 'articles R-05', date: '2026-11-12',
+    problem: 'Xoá bài cuối cùng mang một tag, tag đó vẫn hiện trong GET /api/tags.',
+    fix: 'Chỉ lấy tag có ít nhất một dòng trong article_tags (EXISTS, dùng index tag_id có sẵn). Tag vẫn giữ trong bảng để dùng lại.',
+    files: ['src/tags/tags.service.ts'], tests: 'test/issues.e2e-spec.ts › ISS-02 · tags.hurl 4/4' },
+
+  { id: 'ISS-03', status: 'skip', sev: 'tb', title: 'Đổi mật khẩu không thu hồi token cũ',
+    source: 'auth R-02 · review toàn bộ 2.1', date: '2026-11-12',
+    problem: 'Token bị lộ vẫn dùng được tới khi hết hạn (7 ngày), kể cả sau khi chủ tài khoản đổi mật khẩu.',
+    fix: 'ĐÃ THỬ rồi GỠ: thêm cột token_version + kiểm trong guard làm hỏng bộ test chính thức errors_auth.hurl:240–261 (đổi mật khẩu 2 lần rồi dùng tiếp token cũ, đòi 200). Spec là chuẩn cao nhất nên không làm. Migration đã revert và xoá (chưa merge ở đâu). Thêm test khoá hành vi theo spec để không ai làm lại nhầm.',
+    files: ['src/users/users.service.ts', 'src/auth/jwt-auth.guard.ts'],
+    tests: 'test/issues.e2e-spec.ts › ISS-03 (token cũ vẫn dùng được sau đổi mật khẩu)' },
+
+  { id: 'ISS-04', status: 'done', sev: 'thap', title: 'Response chứa token / dữ liệu riêng có thể bị cache',
+    source: 'Sunlint S037 · auth review', date: '2026-11-12',
+    problem: 'Không có header Cache-Control: trình duyệt hoặc proxy có thể lưu response chứa token.',
+    fix: 'NoStoreMiddleware gắn Cache-Control: no-store cho mọi route (kể cả response lỗi từ guard / filter). Ngoại lệ đã biết: response JSON hỏng không có header vì body-parser chạy trước middleware (xem ISS-24).',
+    files: ['src/common/no-store.middleware.ts', 'src/app.module.ts'], tests: 'test/issues.e2e-spec.ts › ISS-04' },
+
+  { id: 'ISS-05', status: 'done', sev: 'thap', title: 'Thiếu test: nhiều request cùng tạo một tag mới',
+    source: 'review toàn bộ 4.3', date: '2026-11-12',
+    problem: 'resolveTags dùng upsert để chống đua, nhưng chưa có test chứng minh.',
+    fix: 'Thêm test 5 request đồng thời: cả 5 là 201, chỉ có 1 tag. Test xanh ngay (không phải lỗi, chỉ thiếu test).',
+    files: ['src/articles/articles.service.ts'], tests: 'test/issues.e2e-spec.ts › ISS-05' },
+
+  { id: 'ISS-06', status: 'done', sev: 'cao', title: 'Token của user đã bị xoá → POST /articles trả 500',
+    source: 'review toàn bộ 1.1 (đã tái hiện)', date: '2026-11-12',
+    problem: 'Guard chỉ kiểm chữ ký JWT. User bị xoá nhưng token còn hạn: tạo bài → lỗi khoá ngoại 23503 → 500; PUT/DELETE trả 403 thay vì 401.',
+    fix: 'Guard kiểm thêm user còn tồn tại (existsBy theo khoá chính) → 401 token: is invalid. AuthModule export TypeOrmModule.forFeature([User]).',
+    files: ['src/auth/jwt-auth.guard.ts', 'src/auth/auth.module.ts'], tests: 'test/art-hardening.e2e-spec.ts › ART4-01..03' },
+
+  { id: 'ISS-07', status: 'done', sev: 'tb', title: 'Tag và bài không nằm chung transaction → tag mồ côi',
+    source: 'review toàn bộ 1.2, 5.1 (vi phạm .claude/rules/database.md)', date: '2026-11-12',
+    problem: 'Tag được upsert trước; lưu bài lỗi thì tag mới vẫn nằm lại DB.',
+    fix: 'create / update chạy trong manager.transaction; slug trùng thì chạy lại cả transaction (Postgres huỷ transaction sau câu lỗi).',
+    files: ['src/articles/articles.service.ts'], tests: 'ART4-01 (đếm tag sau khi lỗi = 0)' },
+
+  { id: 'ISS-08', status: 'done', sev: 'tb', title: 'PUT và DELETE cùng lúc làm bài đã xoá "sống lại"',
+    source: 'review toàn bộ 1.3 (test tái hiện được trước khi sửa)', date: '2026-11-12',
+    problem: 'update đọc bài rồi save; DELETE commit ở giữa thì save không thấy dòng → INSERT lại bài.',
+    fix: 'Trong transaction, khoá dòng bằng SELECT id … FOR UPDATE (câu riêng, không JOIN — Postgres cấm FOR UPDATE trên phía nullable của LEFT JOIN). DELETE xong trước → 404.',
+    files: ['src/articles/articles.service.ts'], tests: 'test/art-hardening.e2e-spec.ts › ART4-07' },
+
+  { id: 'ISS-09', status: 'done', sev: 'thap', title: 'Header Authorization sai dạng bị coi là khách',
+    source: 'review toàn bộ 2.2 (trái .claude/rules/api.md)', date: '2026-11-12',
+    problem: 'Endpoint tuỳ chọn nhận "Bearer abc" → 200 như khách; endpoint bắt buộc trả "is missing" dù header có gửi.',
+    fix: 'extractToken phân biệt: không header (undefined) · sai dạng (null) · token. Sai dạng → 401 token: is invalid ở cả hai guard.',
+    files: ['src/auth/jwt-auth.guard.ts'], tests: 'ART4-04..06' },
+
+  { id: 'ISS-10', status: 'done', sev: 'thap', title: 'Service trả luôn lớp bọc HTTP {article} / {user}',
+    source: 'review toàn bộ 3.4', date: '2026-11-12',
+    problem: 'Tầng nghiệp vụ biết hình dạng response HTTP; kiểu ArticleResponse = Promise<…> giấu Promise sau tên giống object.',
+    fix: 'Service trả ArticleView / UserView / ArticlePage; controller tự bọc {article} / {user}. Đổi toUserResponse → toUserView, thêm UserEnvelope, ArticleEnvelope.',
+    files: ['src/articles/articles.service.ts', 'src/articles/articles.controller.ts', 'src/users/user.mapper.ts', 'src/users/users.service.ts', 'src/users/users.controller.ts', 'src/users/user.controller.ts'],
+    tests: 'refactor thuần: toàn bộ e2e + Hurl không đổi' },
+
+  { id: 'ISS-11', status: 'done', sev: 'thap', title: 'Code lặp, số viết thẳng, protected không cần thiết',
+    source: 'review toàn bộ 3.1–3.3', date: '2026-11-12',
+    problem: 'IfPresent định nghĩa 2 lần; TrimEach nằm trong DTO; 255 / 1000 / 100_000 / 10_000 / 2048 lặp giữa DTO; 3 hàm protected trong service không ai kế thừa.',
+    fix: 'IfPresent, TrimEach chuyển về common/validators.ts; hằng TITLE_MAX_LENGTH, BODY_MAX_LENGTH, USERNAME_MAX_LENGTH…; protected → private, resolveTags thành hàm nhận EntityManager.',
+    files: ['src/common/validators.ts', 'src/articles/dto/', 'src/users/dto/'], tests: 'refactor thuần' },
+
+  { id: 'ISS-12', status: 'done', sev: 'thap', title: 'Code demo còn sót, test i18n tự dựng module riêng',
+    source: 'review toàn bộ 3.5, 4.3', date: '2026-11-12',
+    problem: 'GET /api/ping (demo i18n) chạy trên production; main.ts dùng console.log; slug.ts sinh 5 byte ngẫu nhiên nhưng đọc 4; test/app.e2e-spec.ts dựng I18nModule riêng (thiếu resolver x-lang) nên có thể lệch production.',
+    fix: 'Xoá /api/ping, ping-query.dto.ts, common.json; dùng Logger; randomBytes(4); viết lại test i18n trên app thật (6 case: mặc định, ?lang, x-lang, Accept-Language, thứ tự ưu tiên, ngôn ngữ không hỗ trợ).',
+    files: ['src/main.ts', 'src/articles/slug.ts', 'test/app.e2e-spec.ts'], tests: 'test/app.e2e-spec.ts' },
+
+  { id: 'ISS-13', status: 'done', sev: 'tb', title: 'File nguồn chứa ký tự NUL thật',
+    source: 'tự phát hiện 2026-11-12 (grep báo "Binary file")', date: '2026-11-12',
+    problem: "articles.service.ts dòng hasNul chứa byte 0x00 thay vì chuỗi escape. Code vẫn chạy đúng nhưng git / grep / diff coi là file nhị phân → review PR không đọc được.",
+    fix: 'Thay byte NUL bằng chuỗi escape. Nguyên nhân: lớp chạy lệnh gộp hai dấu gạch chéo thành một khi script sinh code; từ nay tạo ký tự đặc biệt bằng String.fromCharCode. Đã quét toàn dự án: không còn file nào chứa NUL.',
+    files: ['src/articles/articles.service.ts'], tests: 'quét byte 0x00 trên src, test, docs, .claude' },
+
+  { id: 'ISS-14', status: 'done', sev: 'tb', title: 'Thiếu test cho hành vi quan trọng',
+    source: 'review toàn bộ 4.1–4.3', date: '2026-11-12',
+    problem: 'Chưa có test: token user đã xoá; lớp bọc {"article": []}; giới hạn độ dài article; favorited/following = true; câu vi cho 403/404; unit cho validationExceptionFactory, uniqueViolationColumn.',
+    fix: 'Thêm 20 case e2e (art-hardening) + 13 unit test (http-errors, validation-exception.factory, all-exceptions.filter).',
+    files: ['test/art-hardening.e2e-spec.ts', 'src/common/*.spec.ts'], tests: 'chính là các test này' },
+
+  { id: 'ISS-15', status: 'done', sev: 'thap', title: 'Khối catch rỗng ở data-source.ts',
+    source: 'Sunlint C029', date: '2026-11-12',
+    problem: 'try { loadEnvFile() } catch {} nuốt mọi lỗi, kể cả lỗi .env sai cú pháp.',
+    fix: 'Chỉ nạp khi file .env tồn tại (existsSync); lỗi thật sẽ nổi lên.',
+    files: ['src/database/data-source.ts'], tests: 'migration:run / revert chạy được' },
+
+  { id: 'ISS-16', status: 'done', sev: 'thap', title: 'Log 500 nhận path thô; chuỗi header viết thẳng',
+    source: 'Sunlint S056, C024 (code mới của ISS-01, ISS-04)', date: '2026-11-12',
+    problem: 'Path đưa thẳng vào log có thể chứa ký tự điều khiển.',
+    fix: 'JSON.stringify(path) trước khi log; hằng CACHE_CONTROL_HEADER, NO_STORE.',
+    files: ['src/common/all-exceptions.filter.ts', 'src/common/no-store.middleware.ts'], tests: 'unit filter' },
+
+  { id: 'ISS-17', status: 'done', sev: 'thap', title: 'Email ở login thiếu @MaxLength',
+    source: 'review toàn bộ 5.2 (trái .claude/rules/api.md)', date: '2026-11-12',
+    problem: 'Luật dự án: chuỗi người dùng nhập luôn có @MaxLength.',
+    fix: 'Thêm @MaxLength(EMAIL_MAX_LENGTH). Mật khẩu ở login cố ý không giới hạn (ghi chú trong DTO): bcrypt chỉ đọc 72 byte, sai thế nào cũng là "credentials invalid".',
+    files: ['src/users/dto/login-user.dto.ts'], tests: 'auth.hurl, errors_auth.hurl' },
+
+  { id: 'ISS-20', status: 'done', sev: 'tb', title: 'Login chưa giới hạn số lần thử (brute-force)',
+    source: 'Sunlint S045 · review toàn bộ 2.3', date: '2026-11-12',
+    problem: 'Có thể thử mật khẩu không giới hạn ở POST /api/users/login.',
+    fix: 'Bạn đồng ý cài @nestjs/throttler 6.7.1 (gói chính thức của Nest). ThrottlerGuard CHỈ gắn ở POST /users/login: 10 lần / 60 giây / IP (đổi bằng LOGIN_THROTTLE_LIMIT, LOGIN_THROTTLE_TTL_MS). Vượt → 429 {"errors":{"request":["too many attempts, try again later"]}} + Retry-After, có bản tiếng Việt. Bộ e2e chạy với giới hạn 1000; test ISS-20 dựng app riêng giới hạn 3. Lưu ý khi deploy: bộ đếm nằm trong RAM (nhiều instance cần Redis); sau proxy phải bật trust proxy.',
+    files: ['src/users/login-throttle.ts', 'src/users/users.controller.ts', 'src/common/all-exceptions.filter.ts', 'vitest.config.e2e.ts'], tests: 'issues e2e ISS-20' },
+
+  { id: 'ISS-21', status: 'done', sev: 'thap', title: 'Tag phân biệt hoa thường',
+    source: 'QA-articles-01', date: '2026-11-10',
+    problem: '"NestJS" và "nestjs" là hai tag khác nhau; ?tag=nestjs không thấy bài gắn "NestJS".',
+    fix: 'Tag lưu chữ thường: decorator TagNames (tagList) và TagName (?tag=) trong common/validators.ts cắt khoảng trắng + toLowerCase, thay TrimEach. Migration LowercaseTags gộp tag cũ trùng nhau sau khi hạ chữ (DB dev có 1 cặp), down() để trống vì không khôi phục được chữ hoa gốc.',
+    files: ['src/common/validators.ts', 'src/articles/dto/*.ts', 'src/database/migrations/1794400000000-LowercaseTags.ts'], tests: 'issues e2e ISS-21 (2 case)' },
+
+  { id: 'ISS-22', status: 'done', sev: 'thap', title: 'image của user nhận mọi chuỗi',
+    source: 'auth R-06', date: '2026-11-09',
+    problem: 'image có thể là "javascript:alert(1)"; client hiển thị không escape thì nguy hiểm.',
+    fix: '@IsUrl chỉ nhận http/https có giao thức; null và "" vẫn xoá ảnh như spec. require_tld: false để http://localhost dùng được khi dev. Sai → 422 image "is invalid". AUTH-08 đổi giá trị tạm "tạm thời" thành URL (phần kiểm "" → null giữ nguyên).',
+    files: ['src/users/dto/update-user.dto.ts', 'src/i18n/*/validation.json'], tests: 'issues e2e ISS-22 (8 case)' },
+
+  { id: 'ISS-23', status: 'open', sev: 'thap', title: 'GET /articles/feed sẽ bị route :slug bắt nhầm',
+    source: 'articles R-07', date: '2026-11-10',
+    problem: 'Chưa có route feed nên /articles/feed rơi vào :slug → 404 (Hurl đòi 401).',
+    fix: 'Khi làm feature Feed: khai báo @Get("feed") TRƯỚC @Get(":slug"). Luật đã ghi trong .claude/rules/api.md.',
+    files: ['src/articles/articles.controller.ts'], tests: 'errors_articles.hurl:39, feed.hurl' },
+
+  { id: 'ISS-24', status: 'open', sev: 'thap', title: 'Response JSON hỏng không có Cache-Control',
+    source: 'tự phát hiện khi kiểm ISS-04', date: '2026-11-12',
+    problem: 'body-parser của Express chạy trước middleware của Nest, nên request JSON hỏng không đi qua NoStoreMiddleware. Response chỉ chứa câu lỗi, không chứa dữ liệu riêng.',
+    fix: 'Rủi ro rất thấp. Nếu muốn tuyệt đối: đặt header ngay trong AllExceptionsFilter.',
+    files: ['src/common/all-exceptions.filter.ts'], tests: '—' },
+
+  { id: 'ISS-25', status: 'open', sev: 'thap', title: '?limit= rỗng → 422, còn ?offset= rỗng → 0',
+    source: 'soát pagination', date: '2026-11-12',
+    problem: 'Number("") = 0 nên limit rỗng vấp @Min(1) → 422 "must be greater than or equal to 1", còn offset rỗng lọt qua thành 0. Hai tham số cùng loại mà xử lý khác nhau. Cũng nhận "1e1", "0x5", " 10" là số (cách Number() của JS đọc chuỗi).',
+    fix: 'Đề xuất: chuỗi rỗng → dùng giá trị mặc định (limit 20, offset 0); chỉ nhận chữ số thập phân /^\\d+$/. Spec không nói, không test nào đụng.',
+    files: ['src/articles/dto/list-articles-query.dto.ts'], tests: '—' },
+
+  { id: 'ISS-26', status: 'open', sev: 'thap', title: 'Sắp xếp (created_at, id) nhưng index chỉ có created_at',
+    source: 'soát pagination', date: '2026-11-12',
+    problem: 'ORDER BY created_at DESC, id DESC. Hiện 406 bài, câu trang mất 0,3 ms (Postgres quét cả bảng rồi sort trong RAM). Khi bảng lớn, index một cột không cho Postgres dừng sớm ở offset+limit.',
+    fix: 'Khi dữ liệu lớn: thay IDX_articles_created_at bằng index (created_at DESC, id DESC). OFFSET sâu vẫn tốn O(offset): spec bắt dùng offset nên không đổi sang cursor.',
+    files: ['src/articles/article.entity.ts', 'migration mới'], tests: '—' },
+
+  { id: 'ISS-27', status: 'open', sev: 'thap', title: 'Test R-04 (updatedAt đổi khi chỉ sửa tagList) chập chờn',
+    source: 'kiểm từng nhánh khi tách PR', date: '2026-11-13',
+    problem: 'Fail 1 trong 9 lần chạy cả bộ e2e, đúng lần đầu ngay sau khi Docker Desktop vừa khởi động; 8 lần sau (5 lần chạy riêng, 3 lần cả bộ) đều qua. created_at/updated_at do Postgres trong VM của Docker đặt, test chỉ chờ 15 ms giữa tạo và sửa.',
+    fix: 'Nghi đồng hồ VM bị chỉnh lại lúc mới khởi động (chưa chứng minh). Hướng sửa: so sánh updatedAt > createdAt thay vì "khác before.updatedAt", hoặc đặt updatedAt từ một nguồn giờ duy nhất.',
+    files: ['test/articles.e2e-spec.ts', 'src/common/base.entity.ts'], tests: 'articles e2e R-04' },
+
+  { id: 'ISS-30', status: 'skip', sev: 'thap', title: 'Sunlint S037 vẫn báo "handler thiếu anti-cache header" (8)',
+    source: 'Sunlint', date: '2026-11-12',
+    problem: 'Sunlint chỉ nhìn decorator trên từng handler.',
+    fix: 'Báo nhầm: header đã gắn ở NoStoreMiddleware cho mọi route, test ISS-04 kiểm header thật.',
+    files: [], tests: 'ISS-04' },
+
+  { id: 'ISS-31', status: 'skip', sev: 'thap', title: 'Sunlint C018 / C030: ném lại lỗi gốc (13)',
+    source: 'Sunlint', date: '2026-11-12',
+    problem: 'retryOnSlugTaken, saveOrConflict chỉ bắt lỗi trùng unique, lỗi khác ném lại nguyên vẹn.',
+    fix: 'Cố ý: lỗi không lường trước đi tới AllExceptionsFilter → 500 câu chung + log kèm stack. Bọc lại chỉ làm mất stack gốc.',
+    files: ['src/articles/articles.service.ts', 'src/users/users.service.ts'], tests: 'unit filter (500)' },
+
+  { id: 'ISS-32', status: 'skip', sev: 'thap', title: 'Sunlint S006 / S042 / C033 / C014 / S055',
+    source: 'Sunlint', date: '2026-11-12',
+    problem: 'S006 "password plaintext" ở typeorm.options; S042 "JWT không expiresIn"; C033 transaction trong service; C014 new Logger; S055 không kiểm Content-Type.',
+    fix: 'S006: là mật khẩu DB đọc từ env, không phải response. S042: expiresIn đặt chung ở JwtModule.registerAsync. C033, C014: cách làm chuẩn của NestJS / TypeORM. S055: body-parser chỉ đọc JSON, sai Content-Type → body rỗng → 422.',
+    files: [], tests: '—' }
+];
+
+var LOG = [
+  ['2026-11-12', 'Lập sổ theo dõi; gom 25 mục từ review auth, review articles, QA, review độc lập toàn bộ code và Sunlint.'],
+  ['2026-11-12', 'PR art-4: sửa ISS-06..09, 11, 14, 15, 17. 9 test fail đúng lý do trước khi sửa (ISS-08 tái hiện được thật).'],
+  ['2026-11-12', 'Sửa ISS-01, 02, 04, 05, 10, 12, 13, 16. Thử ISS-03 → làm hỏng errors_auth.hurl:261 → gỡ hoàn toàn, chuyển "không sửa". Bài học: lần kiểm trước khi làm, lệnh grep bị head cắt mất dòng chứng minh — kết luận "Hurl không đổi mật khẩu" là sai.'],
+  ['2026-11-12', 'Bạn chốt cả 3 mục chờ → sửa ISS-20 (throttle login), ISS-21 (tag chữ thường + migration), ISS-22 (image phải là URL). Cổng kiểm 6 PASS + 1 SKIP (chưa có git) · e2e 147/147 · Hurl không hồi quy · Sunlint 74.1 điểm.'],
+  ['2026-11-12', 'Cổng kiểm 7 PASS · e2e 136/136 · unit 22/22 · Hurl không hồi quy · Sunlint 31 → 30 cảnh báo, 65.5 → 73.2 điểm.']
+];
+
+var STATUS = { done: 'Đã sửa', open: 'Còn mở', wait: 'Chờ bạn quyết', skip: 'Không sửa (có lý do)' };
+var SEV = { cao: 'Cao', tb: 'Trung bình', thap: 'Thấp' };
+var filter = 'all';
+
+function fold(s) { return s.normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/đ/g, 'd').replace(/Đ/g, 'D').toLowerCase(); }
+function esc(s) { var d = document.createElement('div'); d.textContent = s; return d.innerHTML; }
+function link(f) { return '<a href="../' + esc(f) + '"><code>' + esc(f) + '</code></a>'; }
+
+function renderStats() {
+  var c = { done: 0, open: 0, wait: 0, skip: 0 };
+  ISSUES.forEach(function (i) { c[i.status]++; });
+  document.getElementById('stats').innerHTML = Object.keys(STATUS).map(function (k) {
+    return '<div class="stat ' + k + '"><b>' + c[k] + '</b><span>' + STATUS[k] + '</span></div>';
+  }).join('') + '<div class="stat"><b>' + ISSUES.length + '</b><span>Tổng</span></div>';
+}
+
+function renderChips() {
+  var opts = [['all', 'Tất cả']].concat(Object.keys(STATUS).map(function (k) { return [k, STATUS[k]]; }));
+  document.getElementById('chips').innerHTML = opts.map(function (o) {
+    return '<button class="chip" type="button" data-f="' + o[0] + '" aria-pressed="' + (filter === o[0]) + '">' + o[1] + '</button>';
+  }).join(' ');
+  document.querySelectorAll('.chip').forEach(function (b) {
+    b.addEventListener('click', function () { filter = b.getAttribute('data-f'); renderChips(); renderList(); });
+  });
+}
+
+function renderList() {
+  var q = fold(document.getElementById('q').value.trim());
+  var rows = ISSUES.filter(function (i) {
+    if (filter !== 'all' && i.status !== filter) return false;
+    if (!q) return true;
+    return fold([i.id, i.title, i.source, i.problem, i.fix, i.files.join(' '), i.tests].join(' ')).indexOf(q) >= 0;
+  });
+  document.getElementById('list').innerHTML = rows.length ? rows.map(function (i) {
+    return '<article class="card ' + i.status + '">' +
+      '<div class="head"><span class="id">' + i.id + '</span><span class="title">' + esc(i.title) + '</span>' +
+      '<span class="tag st-' + i.status + '">' + STATUS[i.status] + '</span>' +
+      '<span class="tag sev-' + i.sev + '">' + SEV[i.sev] + '</span></div>' +
+      '<div class="meta">Nguồn: ' + esc(i.source) + ' · ' + i.date + '</div>' +
+      '<dl><dt>Vấn đề</dt><dd>' + esc(i.problem) + '</dd>' +
+      '<dt>Xử lý</dt><dd>' + esc(i.fix) + '</dd>' +
+      (i.files.length ? '<dt>File</dt><dd>' + i.files.map(link).join(' ') + '</dd>' : '') +
+      '<dt>Chứng minh</dt><dd>' + esc(i.tests) + '</dd></dl></article>';
+  }).join('') : '<p class="empty">Không có mục nào khớp.</p>';
+}
+
+document.getElementById('updated').textContent = UPDATED;
+document.getElementById('log').innerHTML = LOG.map(function (l) { return '<li><b>' + l[0] + '</b> — ' + esc(l[1]) + '</li>'; }).join('');
+document.getElementById('q').addEventListener('input', renderList);
+renderStats(); renderChips(); renderList();
+
+(function () {
+  var root = document.documentElement;
+  try { var t = localStorage.getItem('tracker-theme'); if (t) root.setAttribute('data-theme', t); } catch (e) {}
+  document.getElementById('theme').addEventListener('click', function () {
+    var dark = root.getAttribute('data-theme') === 'dark' ||
+      (!root.getAttribute('data-theme') && matchMedia('(prefers-color-scheme: dark)').matches);
+    var next = dark ? 'light' : 'dark';
+    root.setAttribute('data-theme', next);
+    try { localStorage.setItem('tracker-theme', next); } catch (e) {}
+  });
+})();
+</script>
+</body>
+</html>
