@@ -84,11 +84,21 @@ export class ArticlesService {
         if (dto.body !== undefined) article.body = dto.body;
         if (dto.tagList !== undefined) {
           article.tags = await resolveTags(manager, dto.tagList);
-          // Chỉ đổi tag thì TypeORM chỉ ghi bảng nối, không UPDATE articles →
-          // @UpdateDateColumn không chạy. Đặt tay để updatedAt phản ánh lần sửa.
-          article.updatedAt = new Date();
         }
-        return loadForView(manager, (await manager.save(article)).id);
+        const saved = await manager.save(article);
+        if (dto.tagList !== undefined) {
+          // Chỉ đổi tag thì TypeORM chỉ ghi bảng nối, không UPDATE articles →
+          // @UpdateDateColumn không chạy. Đặt bằng đồng hồ của DB (như created_at),
+          // không dùng new Date() của app: hai đồng hồ lệch nhau thì updatedAt có thể
+          // nhỏ hơn createdAt (nghi là nguyên nhân ISS-27).
+          await manager
+            .createQueryBuilder()
+            .update(Article)
+            .set({ updatedAt: () => 'CURRENT_TIMESTAMP' })
+            .where('id = :id', { id: saved.id })
+            .execute();
+        }
+        return loadForView(manager, saved.id);
       }),
     );
     return this.toView(updated, userId);

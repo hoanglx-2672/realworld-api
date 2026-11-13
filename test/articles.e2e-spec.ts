@@ -468,7 +468,10 @@ describe('articles (e2e)', () => {
         .send({ article: { tagList: [`r04_${id}`] } })
         .expect(200);
       expect(after.body.article.tagList).toEqual([`r04_${id}`]);
-      expect(after.body.article.updatedAt).not.toBe(before.updatedAt);
+      // Lớn hơn, không chỉ "khác": updatedAt lùi về trước (đồng hồ lệch) cũng là lỗi.
+      expect(Date.parse(after.body.article.updatedAt)).toBeGreaterThan(
+        Date.parse(before.updatedAt),
+      );
       expect(after.body.article.createdAt).toBe(before.createdAt);
     });
 
