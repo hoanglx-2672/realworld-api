@@ -1,5 +1,5 @@
 # CI: chạy lại cổng kiểm của .claude/skills/review-feature/scripts/kiem.mjs trên GitHub
-# cho mỗi PR và mỗi lần push lên master (trừ SunLint: vẫn chạy ở máy, xem docs/tracker.html).
+# cho mỗi PR và mỗi lần push lên master (trừ SunLint: cần cài global, vẫn chạy ở máy).
 name: CI
 
 on:
