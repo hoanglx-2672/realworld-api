@@ -1,0 +1,409 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Sổ kiến thức · realworld-api</title>
+<style>
+:root{
+  --bg:#fbfaf7; --surface:#ffffff; --surface-2:#f3f1ec; --text:#1d1c1a; --muted:#6b6862;
+  --line:#e4e0d8; --accent:#c2410c; --accent-soft:#fdeee5; --ok:#15803d; --ok-soft:#e7f5ec;
+  --code-bg:#f5f3ee; --code-text:#2b2925; --warn:#a16207; --warn-soft:#fff7e0;
+  --mono: ui-monospace, "Cascadia Code", "JetBrains Mono", Consolas, monospace;
+  --sans: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark){
+  :root{
+    --bg:#151412; --surface:#1d1c19; --surface-2:#25231f; --text:#ece9e2; --muted:#a29e95;
+    --line:#34312b; --accent:#fb923c; --accent-soft:#3a2416; --ok:#4ade80; --ok-soft:#173022;
+    --code-bg:#211f1b; --code-text:#e6e2d9; --warn:#facc15; --warn-soft:#332a12;
+    color-scheme: dark;
+  }
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);font:15px/1.65 var(--sans)}
+a{color:var(--accent);text-decoration:none} a:hover{text-decoration:underline}
+code{font:13px var(--mono);background:var(--code-bg);color:var(--code-text);padding:1px 5px;border-radius:4px}
+pre{font:13px/1.55 var(--mono);background:var(--code-bg);color:var(--code-text);padding:12px 14px;border-radius:8px;overflow-x:auto;border:1px solid var(--line);margin:10px 0}
+pre code{background:none;padding:0}
+.c{color:var(--muted)}
+.wrap{max-width:900px;margin:0 auto;padding:40px 24px 120px}
+h1{font-size:30px;line-height:1.2;margin:0 0 8px;letter-spacing:-.01em}
+.lead{font-size:16px;color:var(--muted);max-width:680px;margin:0}
+.top{display:flex;justify-content:space-between;align-items:baseline;gap:16px;flex-wrap:wrap;margin-bottom:6px}
+.back{font-size:14px}
+.toolbar{position:sticky;top:0;z-index:2;background:var(--bg);padding:16px 0 12px;margin:20px 0 8px;border-bottom:1px solid var(--line)}
+.search{width:100%;font:inherit;padding:10px 14px;border-radius:8px;border:1px solid var(--line);background:var(--surface);color:var(--text)}
+.search:focus{outline:2px solid var(--accent);outline-offset:1px}
+.filters{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
+.filters button{font:inherit;font-size:13px;padding:4px 12px;border-radius:99px;border:1px solid var(--line);background:var(--surface);color:var(--text);cursor:pointer}
+.filters button[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:#fff}
+.count{font-size:13px;color:var(--muted);margin-top:8px}
+h2.group{font-size:13px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin:32px 0 10px}
+.note{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:16px 20px;margin:12px 0}
+.note h3{font-size:16px;margin:0 0 4px;display:flex;gap:10px;align-items:baseline}
+.note h3 .id{font:600 12px var(--mono);color:var(--accent);flex:none}
+.note .row{display:grid;grid-template-columns:92px minmax(0,1fr);gap:4px 14px;margin-top:10px;font-size:14px}
+.note .k{color:var(--muted);font-size:12px;text-transform:uppercase;letter-spacing:.04em;padding-top:2px}
+.note .v p{margin:0 0 6px}
+.note .trap{background:var(--warn-soft);border-radius:6px;padding:8px 12px;font-size:14px;margin-top:10px}
+.note .trap b{color:var(--warn)}
+.note .where{display:flex;flex-wrap:wrap;gap:6px}
+.note .where a{font:12px var(--mono);padding:2px 8px;border-radius:99px;background:var(--surface-2);border:1px solid var(--line);color:var(--text)}
+.note .where a.lesson{background:var(--ok-soft);border-color:transparent}
+.tag{font-size:11px;padding:1px 8px;border-radius:99px;background:var(--surface-2);color:var(--muted);margin-left:auto;flex:none}
+.empty{color:var(--muted);text-align:center;padding:40px 0}
+mark{background:var(--accent-soft);color:inherit;border-radius:2px}
+@media (max-width:640px){ .note .row{grid-template-columns:1fr} .note .k{padding-top:6px} }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="top">
+    <h1>Sổ kiến thức</h1>
+    <a class="back" href="driver.html">← Driver (đọc hiểu dự án)</a>
+  </div>
+  <p class="lead">Các kiến thức đã dùng khi làm <b>auth</b> và <b>articles</b>. Mỗi ghi chú: gặp vấn đề gì, dùng kiến thức nào, nằm ở file nào, và bẫy đã gặp thật (lấy từ review và QA trong <code>docs/features/</code>).</p>
+
+  <div class="toolbar">
+    <input class="search" id="q" type="search" placeholder="Tìm: N+1, bcrypt, slug, null, 204, deadlock…" aria-label="Tìm ghi chú">
+    <div class="filters" id="filters" role="group" aria-label="Lọc theo chủ đề"></div>
+    <div class="count" id="count" aria-live="polite"></div>
+  </div>
+
+  <div id="list"></div>
+</div>
+
+<script>
+const L = '../../learning/lessons/';
+const GROUPS = {
+  nest: 'NestJS',
+  valid: 'Validation (class-validator / class-transformer)',
+  db: 'TypeORM & PostgreSQL',
+  sec: 'Xác thực & bảo mật',
+  i18n: 'i18n',
+  test: 'Test',
+  process: 'Quy trình & công cụ',
+};
+
+// ---------- Ghi chú ----------
+// p: vấn đề · k: kiến thức / cách làm (HTML) · w: [nhãn, đường dẫn] · l: bài học · t: bẫy
+const NOTES = [
+  // ===== NestJS =====
+  { g:'nest', id:'N1', title:'Guard dùng chung cho "bắt buộc" và "tuỳ chọn" đăng nhập',
+    p:'Xem bài, danh sách bài: khách xem được, nhưng có token thì phải tính <code>favorited</code>, <code>following</code> theo người xem.',
+    k:`<p>Một guard cha có cờ <code>protected optional</code>; class con chỉ đổi cờ. Không có token: guard cha ném 401, guard con cho qua với <code>auth = undefined</code>. Token hỏng thì cả hai đều 401.</p>
+<pre><code>export class JwtAuthGuard implements CanActivate {
+  protected readonly optional: boolean = false;
+  async canActivate(ctx) {
+    const token = extractToken(req);
+    if (!token &amp;&amp; this.optional) return true;
+    ...
+  }
+}
+export class OptionalJwtAuthGuard extends JwtAuthGuard {
+  protected override readonly optional = true;
+}</code></pre>`,
+    w:[['auth/jwt-auth.guard.ts','../src/auth/jwt-auth.guard.ts'],['articles.controller.ts','../src/articles/articles.controller.ts']],
+    l:['01-overview/08-guards'],
+    t:'Token hỏng ở endpoint tuỳ chọn: nếu lặng lẽ coi là khách, client không biết token đã hết hạn. Dự án chọn trả 401.' },
+  { g:'nest', id:'N2', title:'Custom param decorator <code>@CurrentAuth()</code>',
+    p:'Controller cần biết ai đang gọi mà không muốn đụng vào object <code>request</code>.',
+    k:`<p>Guard gắn <code>request.auth</code>; <code>createParamDecorator</code> lấy ra thành tham số.</p>
+<pre><code>export const CurrentAuth = createParamDecorator(
+  (_d, ctx: ExecutionContext) =&gt; ctx.switchToHttp().getRequest().auth);
+update(@CurrentAuth() auth: AuthContext, @Body() body: ...) {}</code></pre>`,
+    w:[['current-auth.decorator.ts','../src/auth/current-auth.decorator.ts']],
+    l:['01-overview/10-custom-decorators'] },
+  { g:'nest', id:'N3', title:'Gom nhiều decorator thành một: <code>applyDecorators</code>',
+    p:'Mọi body bọc key (<code>{"user": …}</code>, <code>{"article": …}</code>) đều cần 4 decorator giống nhau.',
+    k:`<pre><code>export const Wrapped = (type) =&gt;
+  applyDecorators(IsDefined(), IsObject(), ValidateNested(), Type(type));
+
+@Wrapped(() =&gt; CreateArticleDto) article: CreateArticleDto;</code></pre>`,
+    w:[['common/validators.ts','../src/common/validators.ts']],
+    l:['01-overview/10-custom-decorators'] },
+  { g:'nest', id:'N4', title:'Mã trạng thái: <code>@HttpCode</code>',
+    p:'Nest mặc định POST trả 201, các method khác 200. Spec đòi login 200, xoá 204.',
+    k:`<pre><code>@Post('login') @HttpCode(HttpStatus.OK)            login() {}
+@Delete(':slug') @HttpCode(HttpStatus.NO_CONTENT)  remove(): Promise&lt;void&gt; {}</code></pre>`,
+    w:[['users.controller.ts','../src/users/users.controller.ts'],['articles.controller.ts','../src/articles/articles.controller.ts']],
+    l:['01-overview/02-controllers'] },
+  { g:'nest', id:'N5', title:'Thứ tự route: tĩnh trước, có tham số sau',
+    p:'<code>GET /articles/feed</code> sẽ bị <code>@Get(\':slug\')</code> bắt nhầm (slug = "feed") → 404.',
+    k:'<p>Trong cùng controller, khai báo <code>@Get(\'feed\')</code> <b>trước</b> <code>@Get(\':slug\')</code>. Express khớp route theo thứ tự đăng ký.</p>',
+    w:[['articles.controller.ts','../src/articles/articles.controller.ts'],['.claude/rules/api.md','../.claude/rules/api.md']],
+    t:'Bộ test chính thức đòi <code>GET /articles/feed</code> không token → 401. Hiện nó ra 404 vì chưa có route feed (đã ghi cho feature follow).' },
+  { g:'nest', id:'N6', title:'Dynamic module + cấu hình bắt buộc',
+    p:'<code>JwtModule</code> cần <code>JWT_SECRET</code> từ <code>.env</code>; thiếu secret thì không được phép chạy.',
+    k:`<pre><code>JwtModule.registerAsync({
+  inject: [ConfigService],
+  useFactory: (c: ConfigService) =&gt; ({
+    secret: c.getOrThrow('JWT_SECRET'),   <span class="c">// thiếu → app không khởi động</span>
+    signOptions: { expiresIn: parseExpiresIn(c.get('JWT_EXPIRES_IN', '7d')) },
+  }),
+})</code></pre>
+<p><code>AuthModule</code> <code>exports: [JwtModule]</code> → module nào import AuthModule mới inject được <code>JwtService</code> (guard cần nó).</p>`,
+    w:[['auth/auth.module.ts','../src/auth/auth.module.ts']],
+    l:['02-fundamentals/03-dynamic-modules','03-application/01-configuration'] },
+  { g:'nest', id:'N7', title:'Một hàm cấu hình app dùng chung cho main.ts và e2e',
+    p:'Test dựng app khác app thật (thiếu prefix, thiếu pipe) → test xanh mà production sai.',
+    k:'<p><code>configureApp(app)</code> đặt prefix <code>/api</code> và pipe toàn cục; <code>main.ts</code> và <code>createTestApp()</code> cùng gọi nó.</p>',
+    w:[['app.setup.ts','../src/app.setup.ts'],['test/support/create-test-app.ts','../test/support/create-test-app.ts']],
+    l:['02-fundamentals/12-testing'] },
+  { g:'nest', id:'N8', title:'Controller mỏng, service dày, mapper chọn field',
+    p:'Entity <code>User</code> có <code>password</code>; trả entity thẳng ra là lộ hash.',
+    k:'<p>Controller: nhận request, gọi service. Service: nghiệp vụ, kiểm quyền, ném lỗi. Mapper: chép đúng field spec cho phép (<code>toUserView</code>, <code>toArticleView</code>, <code>toProfile</code>); controller bọc <code>{user}</code> / <code>{article}</code>.</p>',
+    w:[['user.mapper.ts','../src/users/user.mapper.ts'],['article.mapper.ts','../src/articles/article.mapper.ts'],['profile.mapper.ts','../src/profiles/profile.mapper.ts']],
+    l:['01-overview/03-providers'] },
+
+  // ===== Validation =====
+  { g:'valid', id:'V1', title:'Lỗi validation theo định dạng spec: <code>exceptionFactory</code>',
+    p:'Nest mặc định trả <code>400 {"message": [...]}</code>; spec đòi <code>422 {"errors": {"email": ["is invalid"]}}</code>.',
+    k:`<p>Truyền <code>exceptionFactory</code> cho pipe. DTO lồng → đi xuống <code>children</code>, key là tên field lá (<code>email</code>, không phải <code>user.email</code>).</p>
+<p>Khi một field hỏng nhiều luật, chỉ trả lỗi "gốc" theo thứ tự ưu tiên <code>isDefined &gt; isNotEmpty &gt; isObject &gt; isArray &gt; isString &gt; isInt</code>; các lỗi còn lại là hệ quả.</p>`,
+    w:[['validation-exception.factory.ts','../src/common/validation-exception.factory.ts']],
+    l:['01-overview/07-pipes','03-application/02-validation'],
+    t:'<code>{"username": 123}</code> từng trả 3 câu, trong đó có "is too long (maximum is 255)" vô nghĩa (QA-auth-02).' },
+  { g:'valid', id:'V2', title:'<code>@IsOptional</code> và <code>ValidateIf</code> khác nhau ở <code>null</code>',
+    p:'PUT: <code>bio: null</code> hợp lệ, nhưng <code>email: null</code> phải bị từ chối 422. Cả hai đều là field tuỳ chọn.',
+    k:`<p><code>@IsOptional()</code> bỏ qua kiểm tra khi giá trị là <code>undefined</code> <b>hoặc</b> <code>null</code>. Muốn chỉ bỏ qua khi không gửi:</p>
+<pre><code>const IfPresent = () =&gt; ValidateIf((_o, v) =&gt; v !== undefined);
+
+@IfPresent() @IsNotEmpty() @IsEmail() email?: string;   <span class="c">// null → can't be blank</span>
+@IsOptional() @IsString() bio?: string | null;         <span class="c">// null → hợp lệ</span></code></pre>`,
+    w:[['update-user.dto.ts','../src/users/dto/update-user.dto.ts'],['update-article.dto.ts','../src/articles/dto/update-article.dto.ts']],
+    l:['03-application/02-validation'] },
+  { g:'valid', id:'V3', title:'Kiểm từng phần tử mảng: <code>{ each: true }</code>',
+    p:'<code>tagList</code>: phải là mảng, tối đa 20 phần tử, mỗi phần tử là chuỗi không rỗng ≤ 50 ký tự.',
+    k:`<pre><code>@IsArray() @ArrayMaxSize(20)
+@IsString({ each: true }) @IsNotEmpty({ each: true }) @MaxLength(50, { each: true })
+tagList?: string[];</code></pre>
+<p>Trim từng phần tử bằng <code>@Transform</code> chạy <b>trước</b> validation (class-transformer chạy trước class-validator).</p>`,
+    w:[['create-article.dto.ts','../src/articles/dto/create-article.dto.ts']] },
+  { g:'valid', id:'V4', title:'Query string là chuỗi: <code>@Type(() =&gt; Number)</code> + giá trị mặc định',
+    p:'<code>?limit=5</code> đến controller là <code>"5"</code>. Không gửi thì phải mặc định 20.',
+    k:`<pre><code>@IsOptional() @Type(() =&gt; Number) @IsInt() @Min(1) @Max(100)
+limit: number = 20;   <span class="c">// mặc định giữ được nhờ transform: true tạo instance</span></code></pre>`,
+    w:[['list-articles-query.dto.ts','../src/articles/dto/list-articles-query.dto.ts']],
+    t:'<code>Number.isInteger(1e20) === true</code>: <code>?offset=1e20</code> qua <code>@IsInt</code> nhưng vượt bigint của Postgres → 500 (articles R-02). Số từ query luôn cần <code>@Max</code>.' },
+  { g:'valid', id:'V5', title:'Đếm byte, không đếm ký tự: <code>@IsByteLength</code>',
+    p:'bcrypt chỉ dùng 72 <b>byte</b> đầu của mật khẩu.',
+    k:'<p><code>@MaxLength(72)</code> đếm ký tự: 40 chữ "é" = 80 byte vẫn lọt, phần sau bị bcrypt cắt âm thầm. Dùng <code>@IsByteLength(0, 72)</code>.</p>',
+    w:[['register-user.dto.ts','../src/users/dto/register-user.dto.ts']],
+    t:'Phát hiện ở auth R-04: hai mật khẩu khác nhau sau byte 72 đều đăng nhập được.' },
+  { g:'valid', id:'V6', title:'Làm sạch đầu vào: trim và chặn ký tự NUL',
+    p:'Username <code>"   "</code> vẫn qua <code>@IsNotEmpty</code>. Ký tự <code>\\u0000</code> làm Postgres lỗi 22021 → 500.',
+    k:`<pre><code>export const Trim = () =&gt; Transform(({ value }) =&gt;
+  typeof value === 'string' ? value.trim() : value);   <span class="c">// "   " → "" → can't be blank</span>
+export const NoNulChar = (o?) =&gt; Matches(/^[^\\u0000]*$/, o);</code></pre>`,
+    w:[['common/validators.ts','../src/common/validators.ts']],
+    t:'NUL gây 500 hai lần: body (auth R-05) rồi path và query (articles R-01: <code>/articles/x%00</code>, <code>?tag=a%00</code>). Mọi chuỗi đi vào truy vấn đều phải chặn, không chỉ body.' },
+  { g:'valid', id:'V7', title:'<code>whitelist: true</code> chặn gán field trái phép',
+    p:'Client gửi <code>{"article": {"slug": "tu-dat", "author": {...}}}</code>.',
+    k:'<p>Field không có decorator trong DTO bị bỏ trước khi vào controller. Service cũng chỉ chép từng field đã biết, không <code>Object.assign(entity, dto)</code>.</p>',
+    w:[['app.setup.ts','../src/app.setup.ts']] },
+
+  // ===== DB =====
+  { g:'db', id:'D1', title:'Quan hệ entity và <code>Relation&lt;T&gt;</code> trong ESM',
+    p:'User ↔ Article import lẫn nhau → "Cannot access \'User\' before initialization".',
+    k:`<p><code>@ManyToOne</code> (tác giả), <code>@OneToMany</code> (comments), <code>@ManyToMany</code> + <code>@JoinTable</code> (tags, favorites), <code>@ManyToMany</code> tự tham chiếu (follows). Kiểu thuộc tính bọc <code>Relation&lt;User&gt;</code>.</p>`,
+    w:[['article.entity.ts','../src/articles/article.entity.ts'],['user.entity.ts','../src/users/user.entity.ts']],
+    l:['04-data/02-typeorm'] },
+  { g:'db', id:'D2', title:'Cột ẩn: <code>select: false</code> + <code>addSelect</code>',
+    p:'Không muốn <code>password</code> bị đọc ra ở mọi truy vấn.',
+    k:`<pre><code>@Column({ select: false }) password: string;
+<span class="c">// chỉ login mới cần:</span>
+createQueryBuilder('user').addSelect('user.password').where(...)</code></pre>`,
+    w:[['users.service.ts','../src/users/users.service.ts']],
+    t:'Entity nạp không có <code>password</code> → <code>save()</code> bỏ qua cột <code>undefined</code>, không ghi đè mất mật khẩu (đã kiểm: đổi bio rồi login lại vẫn được).' },
+  { g:'db', id:'D3', title:'Migration: generate → đọc → run → revert → run',
+    p:'Đổi schema mà không mất dữ liệu, có lịch sử, hoàn tác được.',
+    k:`<pre><code>npm run migration:generate -- src/database/migrations/AddArticleIndexes
+npm run migration:run &amp;&amp; npm run migration:revert &amp;&amp; npm run migration:run</code></pre>
+<p><code>generate</code> báo "No changes in database schema" = entity khớp DB.</p>`,
+    w:[['database/migrations/','../src/database/migrations/'],['typeorm.options.ts','../src/database/typeorm.options.ts']],
+    l:['04-data/02-typeorm'],
+    t:'InitSchema bản đầu để <code>bio NOT NULL DEFAULT \'\'</code> trái spec (bio = null). Vì chưa merge nên sửa và sinh lại; đã merge thì phải tạo migration mới.' },
+  { g:'db', id:'D4', title:'Postgres không tự tạo index cho khoá ngoại',
+    p:'Lọc <code>?author=</code> và sắp "mới nhất trước" trên bảng articles.',
+    k:`<pre><code>@Index('IDX_articles_author_id', ['author'])
+@Index('IDX_articles_created_at', ['createdAt'])
+export class Article ...</code></pre>
+<p>Cột <code>unique</code> (slug, username, tag.name) thì đã có index sẵn từ ràng buộc unique.</p>`,
+    w:[['article.entity.ts','../src/articles/article.entity.ts']] },
+  { g:'db', id:'D5', title:'Tránh N+1: nạp theo lô với <code>IN (...)</code>',
+    p:'Danh sách 20 bài, mỗi bài cần <code>favoritesCount</code>, <code>favorited</code>, <code>author.following</code>. Làm từng bài = 60 câu SQL.',
+    k:`<ol>
+<li>Đếm tổng + lấy id của trang (chỉ cột id).</li>
+<li><code>find({ where: { id: In(ids) }, relations: { author, tags } })</code> rồi xếp lại theo thứ tự id.</li>
+<li>3 truy vấn gộp: <code>COUNT(*) GROUP BY article_id</code> · favorites của người xem · follows của người xem.</li></ol>
+<p>Đo bằng <code>DB_LOGGING=true</code>: trang 1 bài hay 20 bài đều <b>6</b> câu SQL.</p>`,
+    w:[['articles.service.ts · list / viewerStates','../src/articles/articles.service.ts']] },
+  { g:'db', id:'D6', title:'QueryBuilder: lọc bằng join, đếm, phân trang',
+    p:'Lọc theo tag / người favorite mà không nhân bản dòng, OFFSET/LIMIT vẫn đúng.',
+    k:`<pre><code>qb.innerJoin('article.tags', 'filterTag', 'filterTag.name = :tag', { tag })
+const total = await qb.getCount();              <span class="c">// COUNT(DISTINCT article.id)</span>
+const page  = await qb.clone().select('article.id')
+  .orderBy('article.createdAt', 'DESC').addOrderBy('article.id', 'DESC')
+  .offset(q.offset).limit(q.limit).getMany();</code></pre>
+<p>Join lọc chỉ khớp một dòng (tag.name, username đều unique) nên không cần DISTINCT. <code>id DESC</code> phá hoà khi hai bài cùng thời điểm. <code>clone()</code> để truy vấn đếm và truy vấn trang không ảnh hưởng nhau.</p>`,
+    w:[['articles.service.ts · list','../src/articles/articles.service.ts']] },
+  { g:'db', id:'D7', title:'Trùng khoá unique (23505) → 409, và vòng thử lại',
+    p:'Hai request đăng ký cùng username đồng thời đều qua bước kiểm trước; slug ngẫu nhiên có thể trùng.',
+    k:`<p>Kiểm trước để báo đúng field, <b>và</b> bắt lỗi unique của DB cho trường hợp đua nhau. Đọc tên cột từ <code>detail: "Key (email)=(…) already exists."</code>.</p>
+<pre><code>if (uniqueViolationColumn(err) === 'slug' &amp;&amp; attempt &lt; 3) <span class="c">// sinh hậu tố khác</span></code></pre>`,
+    w:[['http-errors.ts','../src/common/http-errors.ts'],['users.service.ts','../src/users/users.service.ts'],['articles.service.ts','../src/articles/articles.service.ts']],
+    t:'Đã thử 2 đăng ký trùng cùng lúc: một 201, một 409, không 500.' },
+  { g:'db', id:'D8', title:'Upsert tag và thứ tự khoá',
+    p:'Hai bài cùng tạo một tag mới cùng lúc → lỗi unique nếu dùng find-rồi-insert.',
+    k:`<pre><code>const names = [...new Set(tagList)].sort();   <span class="c">// cùng thứ tự khoá → tránh deadlock</span>
+await tags.upsert(names.map(name =&gt; ({ name })), { conflictPaths: ['name'] });
+return tags.findBy({ name: In(names) });</code></pre>`,
+    w:[['articles.service.ts · resolveTags','../src/articles/articles.service.ts']],
+    t:'Deadlock (review R-03) không tái hiện được qua 40 cặp request đồng thời, nhưng sắp xếp tên chỉ tốn một dòng nên vẫn thêm.' },
+  { g:'db', id:'D9', title:'<code>@UpdateDateColumn</code> không chạy khi chỉ đổi quan hệ',
+    p:'PUT chỉ đổi <code>tagList</code> → <code>updatedAt</code> giữ nguyên.',
+    k:'<p>TypeORM chỉ ghi bảng nối <code>article_tags</code>, không UPDATE dòng <code>articles</code>. Đặt tay <code>article.updatedAt = new Date()</code> khi có <code>tagList</code>.</p>',
+    w:[['articles.service.ts · update','../src/articles/articles.service.ts']],
+    t:'Bộ test chính thức không kiểm trường hợp này; review phát hiện (R-04).' },
+  { g:'db', id:'D10', title:'Xoá dây chuyền bằng khoá ngoại <code>ON DELETE CASCADE</code>',
+    p:'Xoá bài đang có comment, tag, favorite.',
+    k:'<p>Khai báo <code>onDelete: \'CASCADE\'</code> trên quan hệ → migration sinh FK cascade → <code>DELETE</code> một dòng articles, DB tự dọn bảng con. Không cần xoá tay từng bảng.</p>',
+    w:[['comment.entity.ts','../src/comments/comment.entity.ts']] },
+
+  // ===== Security =====
+  { g:'sec', id:'S1', title:'Băm mật khẩu bằng bcrypt và đăng nhập không lộ email',
+    p:'Kẻ dò thử login: "sai email" và "sai mật khẩu" phải trông giống hệt nhau, kể cả thời gian phản hồi.',
+    k:`<pre><code>const DUMMY_HASH = hashSync('not-a-real-password', 10);
+const ok = await compare(dto.password, user?.password ?? DUMMY_HASH);
+if (!user || !ok) throw 401 {"errors": {"credentials": ["invalid"]}}</code></pre>
+<p>Không có user vẫn chạy bcrypt so với hash giả → thời gian như nhau.</p>`,
+    w:[['users.service.ts · login','../src/users/users.service.ts']],
+    l:['05-security/03-encryption-and-hashing'] },
+  { g:'sec', id:'S2', title:'JWT: payload tối thiểu và bẫy <code>expiresIn</code>',
+    p:'Đổi username/email không được làm token cũ mất hiệu lực; cấu hình hạn dùng từ <code>.env</code>.',
+    k:'<p>Payload chỉ <code>{ sub: userId }</code>. Header spec là <code>Authorization: Token &lt;jwt&gt;</code>, không phải <code>Bearer</code>.</p>',
+    w:[['auth.module.ts · parseExpiresIn','../src/auth/auth.module.ts'],['jwt-auth.guard.ts','../src/auth/jwt-auth.guard.ts']],
+    l:['05-security/01-authentication'],
+    t:'Biến môi trường luôn là chuỗi; jsonwebtoken hiểu chuỗi toàn số <code>"3600"</code> là <b>mili giây</b> → token sống 3,6 giây (đã đo). Chuỗi toàn số phải đổi sang <code>Number</code>.' },
+  { g:'sec', id:'S3', title:'Kiểm quyền sở hữu: 404 trước, 403 sau',
+    p:'User B sửa / xoá bài của user A.',
+    k:'<p>Tìm bài (không có → 404 <code>article: not found</code>), rồi so <code>article.author.id</code> với người gọi (khác → 403 <code>article: forbidden</code>). Kiểm ở service, trước mọi thao tác ghi.</p>',
+    w:[['articles.service.ts · assertAuthor','../src/articles/articles.service.ts']],
+    l:['05-security/02-authorization'] },
+  { g:'sec', id:'S4', title:'Truy vấn tham số hoá chặn SQL injection',
+    p:'<code>?author=x\' OR \'1\'=\'1</code>',
+    k:'<p>Luôn truyền giá trị qua tham số (<code>:author</code>, <code>$1</code>), không ghép chuỗi vào SQL. QA thử: trả về danh sách rỗng, không lộ dữ liệu.</p>',
+    w:[['articles.service.ts','../src/articles/articles.service.ts']] },
+
+  // ===== i18n =====
+  { g:'i18n', id:'I1', title:'Ngôn ngữ theo request và câu tiếng Anh nguyên văn spec',
+    p:'Bộ test chính thức so khớp chuỗi tiếng Anh; người dùng Việt cần câu tiếng Việt.',
+    k:`<p>Resolver thử lần lượt <code>?lang=</code> → <code>x-lang</code> → <code>Accept-Language</code>. <code>en</code> giữ <b>nguyên văn</b> spec (<code>can't be blank</code>, <code>has already been taken</code>); <code>vi</code> là bản dịch. Trong service / guard gọi <code>t('errors.notFound')</code>, middleware đã gắn locale cho cả request.</p>
+<p>Lỗi validation tự dịch theo tên constraint: <code>@IsEmail</code> hỏng → key <code>validation.isEmail</code>.</p>`,
+    w:[['i18n/en/errors.json','../src/i18n/en/errors.json'],['i18n/vi/errors.json','../src/i18n/vi/errors.json'],['app.module.ts','../src/app.module.ts']],
+    l:['03-application/09-internationalization'] },
+
+  // ===== Test =====
+  { g:'test', id:'T1', title:'TDD: thấy test fail <b>đúng lý do</b> rồi mới code',
+    p:'Test xanh ngay từ đầu có thể là test không kiểm gì.',
+    k:'<p>Viết e2e từ case nghiệm thu (ID trong research.md), chạy → mọi test phải fail vì <code>404 Not Found</code> (chưa có route), không phải lỗi cú pháp hay import. Rồi mới code tới xanh.</p>',
+    w:[['test/articles.e2e-spec.ts','../test/articles.e2e-spec.ts'],['.claude/rules/tests.md','../.claude/rules/tests.md']],
+    l:['02-fundamentals/12-testing'] },
+  { g:'test', id:'T2', title:'e2e với DB thật, dữ liệu không đụng nhau',
+    p:'Chạy test nhiều lần trên cùng DB mà không phải dọn.',
+    k:`<p>Hậu tố <code>uid()</code> cho username / email / title; helper <code>registerUser(app)</code>. Feature chưa có API (favorite, follow) thì ghi thẳng vào DB trong test:</p>
+<pre><code>await app.get(DataSource).query(
+  'INSERT INTO follows(follower_id, following_id) VALUES ($1, $2)', [a, b]);</code></pre>`,
+    w:[['create-test-app.ts','../test/support/create-test-app.ts']] },
+  { g:'test', id:'T3', title:'Bẫy JavaScript trong helper test',
+    p:'Test "không gửi token" vẫn gửi token.',
+    k:`<pre><code>const put = (body, tok = token) =&gt; ...;
+put(body, undefined);   <span class="c">// undefined → JS dùng giá trị mặc định = token!</span>
+put(body, null);        <span class="c">// đúng: null mới là "không gửi"</span></code></pre>
+<p>Tương tự: <code>.sort()</code> trên mảng số so như chuỗi → luôn truyền hàm so sánh <code>(a, b) =&gt; a - b</code>.</p>`,
+    w:[['test/user.e2e-spec.ts','../test/user.e2e-spec.ts']] },
+  { g:'test', id:'T4', title:'Mỗi phát hiện review / QA → một test hồi quy',
+    p:'Sửa xong lỗi, sau này sửa code khác lại làm hỏng lại.',
+    k:'<p>Test mang ID phát hiện (<code>R-01</code>, <code>QA-auth-02</code>), viết <b>trước</b> khi sửa và phải fail; sửa xong thì xanh.</p>',
+    w:[['auth-hardening.e2e-spec.ts','../test/auth-hardening.e2e-spec.ts'],['articles.e2e-spec.ts','../test/articles.e2e-spec.ts']] },
+
+  // ===== Process =====
+  { g:'process', id:'P1', title:'Bộ test chính thức (Hurl) là nguồn sự thật',
+    p:'Spec chữ và test vênh nhau: chữ ghi 422 khi trùng email, test đòi 409.',
+    k:`<p>Theo test. Chạy <code>chay-hurl.mjs &lt;feature&gt; --npx</code>; file còn request của feature chưa làm thì thêm <code>--tiep-tuc</code> (Hurl <code>--continue-on-error</code>) để thấy hết kết quả.</p>`,
+    w:[['docs/realworld-spec/README.md','realworld-spec/README.md'],['chay-hurl.mjs','../.claude/skills/qa-test-feature/scripts/chay-hurl.mjs']],
+    t:'Không có <code>--tiep-tuc</code>, Hurl dừng một file ở request hỏng đầu tiên → không biết phần sau đúng hay sai.' },
+  { g:'process', id:'P2', title:'Review độc lập, nhưng phải xác minh trước khi tin',
+    p:'Reviewer (kể cả AI) có thể sai.',
+    k:'<p>Giao cho subagent <b>chỉ</b> code + spec, không đưa kết luận của mình. Mỗi phát hiện đều thử bằng request thật trước khi sửa.</p>',
+    w:[['articles/review.md','features/articles/review.md'],['auth/review.md','features/auth/review.md']],
+    t:'Articles: 7 phát hiện → 4 đúng, 1 không tái hiện được, 1 <b>sai</b> (R-06: "body 100 kB bị chặn 413" — thực tế gửi được), 1 ghi chú.' },
+  { g:'process', id:'P3', title:'Đo, đừng đoán: <code>DB_LOGGING=true</code>',
+    p:'Muốn biết có N+1 không.',
+    k:'<p>Bật log SQL, gửi cùng request với <code>limit=1</code> và <code>limit=20</code>, đếm số dòng <code>query:</code>. Bằng nhau → không N+1.</p>',
+    w:[['.env.example','../.env.example']] },
+  { g:'process', id:'P4', title:'Bẫy curl trên Windows (Git Bash) với tiếng Việt',
+    p:'Gửi title "Học NestJS" bằng <code>curl -d \'...\'</code> → server nhận "H?c NestJS".',
+    k:'<p>curl trong Git Bash đổi tham số dòng lệnh sang code page Windows. Gửi bằng file UTF-8 (<code>--data-binary @body.json</code>) hoặc REST Client. Không phải lỗi app (e2e bằng supertest đã đúng).</p>',
+    w:[['articles/qa.md','features/articles/qa.md'],['requests/articles.http','../requests/articles.http']] },
+  { g:'process', id:'P5', title:'Lỗi lặp lại → đưa vào rule theo đường dẫn',
+    p:'Ký tự NUL gây 500 lần thứ hai.',
+    k:'<p>Quy tắc chỉ đúng cho một vùng code nằm ở <code>.claude/rules/*.md</code> (tự nạp khi sửa file khớp <code>paths</code>), không nhồi vào <code>CLAUDE.md</code>. <code>CLAUDE.md</code> chỉ giữ thứ đúng cho mọi tác vụ, dưới 200 dòng.</p>',
+    w:[['.claude/rules/api.md','../.claude/rules/api.md'],['CLAUDE.md','../CLAUDE.md']] },
+];
+
+// ---------- Hiển thị ----------
+const listEl = document.getElementById('list');
+const qEl = document.getElementById('q');
+const filtersEl = document.getElementById('filters');
+const countEl = document.getElementById('count');
+let active = 'all';
+
+[['all', 'Tất cả'], ...Object.entries(GROUPS)].forEach(([key, label]) => {
+  const b = document.createElement('button');
+  b.type = 'button'; b.textContent = label; b.dataset.key = key;
+  b.setAttribute('aria-pressed', String(key === active));
+  b.addEventListener('click', () => { active = key; render(); });
+  filtersEl.appendChild(b);
+});
+
+const strip = (html) => html.replace(/<[^>]+>/g, ' ').replace(/&[a-z]+;/g, ' ');
+const norm = (s) => s.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/đ/g, 'd');
+
+function card(n) {
+  const where = (n.w || []).map(([label, href]) => `<a href="${href}">${label}</a>`).join('');
+  const lessons = (n.l || []).map((p) => `<a class="lesson" href="${L}${p}/README.md">📘 ${p}</a>`).join('');
+  return `<article class="note" id="${n.id}">
+    <h3><span class="id">${n.id}</span><span>${n.title}</span><span class="tag">${GROUPS[n.g]}</span></h3>
+    <div class="row">
+      <div class="k">Vấn đề</div><div class="v"><p>${n.p}</p></div>
+      <div class="k">Kiến thức</div><div class="v">${n.k}</div>
+      <div class="k">Ở đâu</div><div class="v where">${where}${lessons}</div>
+    </div>
+    ${n.t ? `<div class="trap"><b>Bẫy đã gặp:</b> ${n.t}</div>` : ''}
+  </article>`;
+}
+
+function render() {
+  filtersEl.querySelectorAll('button').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.key === active)));
+  const q = norm(qEl.value.trim());
+  const shown = NOTES.filter((n) =>
+    (active === 'all' || n.g === active) &&
+    (!q || norm(strip(n.id + ' ' + n.title + ' ' + n.p + ' ' + n.k + ' ' + (n.t || ''))).includes(q)));
+  let html = '';
+  for (const g of Object.keys(GROUPS)) {
+    const inGroup = shown.filter((n) => n.g === g);
+    if (!inGroup.length) continue;
+    html += `<h2 class="group">${GROUPS[g]}</h2>` + inGroup.map(card).join('');
+  }
+  listEl.innerHTML = html || '<p class="empty">Không có ghi chú khớp.</p>';
+  countEl.textContent = `${shown.length}/${NOTES.length} ghi chú`;
+}
+qEl.addEventListener('input', render);
+render();
+</script>
+</body>
+</html>

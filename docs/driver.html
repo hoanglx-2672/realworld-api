@@ -1,0 +1,509 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Driver · realworld-api</title>
+<style>
+:root{
+  --bg:#fbfaf7; --surface:#ffffff; --surface-2:#f3f1ec; --text:#1d1c1a; --muted:#6b6862;
+  --line:#e4e0d8; --accent:#c2410c; --accent-soft:#fdeee5; --ok:#15803d; --ok-soft:#e7f5ec;
+  --code-bg:#f5f3ee; --code-text:#2b2925; --warn-soft:#fff7e0;
+  --mono: ui-monospace, "Cascadia Code", "JetBrains Mono", Consolas, monospace;
+  --sans: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark){
+  :root{
+    --bg:#151412; --surface:#1d1c19; --surface-2:#25231f; --text:#ece9e2; --muted:#a29e95;
+    --line:#34312b; --accent:#fb923c; --accent-soft:#3a2416; --ok:#4ade80; --ok-soft:#173022;
+    --code-bg:#211f1b; --code-text:#e6e2d9; --warn-soft:#332a12;
+    color-scheme: dark;
+  }
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{margin:0;background:var(--bg);color:var(--text);font:15px/1.65 var(--sans)}
+a{color:var(--accent);text-decoration:none} a:hover{text-decoration:underline}
+code{font:13px var(--mono);background:var(--code-bg);color:var(--code-text);padding:1px 5px;border-radius:4px}
+pre{font:13px/1.55 var(--mono);background:var(--code-bg);color:var(--code-text);padding:14px 16px;border-radius:8px;overflow-x:auto;border:1px solid var(--line);margin:12px 0}
+pre code{background:none;padding:0}
+.c{color:var(--muted)} .k{color:var(--accent)}
+h1{font-size:30px;line-height:1.2;margin:0 0 8px;letter-spacing:-.01em}
+h2{font-size:22px;margin:56px 0 12px;padding-top:8px;letter-spacing:-.01em}
+h3{font-size:17px;margin:28px 0 8px}
+p{margin:10px 0}
+.layout{display:grid;grid-template-columns:250px minmax(0,1fr);max-width:1180px;margin:0 auto;gap:40px;padding:0 24px}
+nav.toc{position:sticky;top:0;align-self:start;height:100vh;overflow-y:auto;padding:32px 0 32px}
+nav.toc .brand{font-weight:700;font-size:15px;margin-bottom:4px}
+nav.toc .sub{color:var(--muted);font-size:13px;margin-bottom:18px}
+nav.toc ol{list-style:none;margin:0;padding:0}
+nav.toc li a{display:block;padding:5px 10px;border-radius:6px;color:var(--text);font-size:14px}
+nav.toc li a:hover{background:var(--surface-2);text-decoration:none}
+nav.toc li a.active{background:var(--accent-soft);color:var(--accent);font-weight:600}
+.progress{margin:18px 0 0;padding:12px;border:1px solid var(--line);border-radius:8px;background:var(--surface)}
+.progress .bar{height:6px;background:var(--surface-2);border-radius:99px;overflow:hidden;margin-top:8px}
+.progress .bar i{display:block;height:100%;width:0;background:var(--ok);transition:width .3s}
+.progress small{color:var(--muted)}
+main{padding:40px 0 120px;max-width:800px}
+.lead{font-size:17px;color:var(--muted);max-width:640px}
+.callout{border:1px solid var(--line);background:var(--surface);border-radius:10px;padding:14px 18px;margin:16px 0}
+.callout.try{border-left:4px solid var(--accent)}
+.callout.note{background:var(--warn-soft);border-color:transparent}
+.callout b:first-child{display:block;margin-bottom:4px}
+table{border-collapse:collapse;width:100%;font-size:14px;margin:12px 0}
+th,td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--line);vertical-align:top}
+th{font-size:12px;text-transform:uppercase;letter-spacing:.04em;color:var(--muted);font-weight:600}
+.tablewrap{overflow-x:auto}
+.ideas{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:12px;margin:16px 0}
+.idea{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:14px 16px}
+.idea .n{font:600 12px var(--mono);color:var(--accent)}
+.idea h4{margin:4px 0 6px;font-size:15px}
+.idea p{margin:0;color:var(--muted);font-size:14px}
+/* Request flow */
+.flow{display:grid;grid-template-columns:minmax(0,230px) minmax(0,1fr);gap:16px;margin:18px 0;align-items:start}
+.steps{display:flex;flex-direction:column;gap:6px}
+.steps button{all:unset;cursor:pointer;display:flex;gap:10px;align-items:center;padding:9px 12px;border:1px solid var(--line);border-radius:8px;background:var(--surface);font-size:14px}
+.steps button:hover{border-color:var(--accent)}
+.steps button[aria-selected="true"]{background:var(--accent-soft);border-color:var(--accent);font-weight:600}
+.steps button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.steps .num{font:600 12px var(--mono);width:22px;height:22px;border-radius:50%;display:grid;place-items:center;background:var(--surface-2);flex:none}
+.steps button[aria-selected="true"] .num{background:var(--accent);color:#fff}
+.steps .arrow{text-align:center;color:var(--muted);font-size:11px;line-height:1}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:16px 20px;min-height:320px}
+.panel h4{margin:0 0 4px;font-size:16px}
+.panel .where{font:12px var(--mono);color:var(--muted);margin-bottom:8px}
+.panel .fail{background:var(--warn-soft);border-radius:6px;padding:6px 10px;font-size:13px;margin-top:10px}
+.navbtns{display:flex;justify-content:space-between;margin-top:14px}
+.navbtns button{font:inherit;font-size:13px;padding:6px 12px;border-radius:6px;border:1px solid var(--line);background:var(--surface-2);color:var(--text);cursor:pointer}
+.navbtns button:disabled{opacity:.4;cursor:default}
+/* Concept cards */
+details.concept{background:var(--surface);border:1px solid var(--line);border-radius:10px;margin:10px 0;overflow:hidden}
+details.concept[open]{border-color:var(--muted)}
+details.concept summary{list-style:none;cursor:pointer;display:flex;align-items:center;gap:12px;padding:12px 16px}
+details.concept summary::-webkit-details-marker{display:none}
+details.concept summary .t{font-weight:600;flex:1}
+details.concept summary .chev{color:var(--muted);transition:transform .2s}
+details.concept[open] summary .chev{transform:rotate(90deg)}
+details.concept .body{padding:0 18px 14px;border-top:1px solid var(--line)}
+.done-toggle{display:inline-flex;align-items:center;gap:6px;font-size:13px;color:var(--muted);cursor:pointer;user-select:none}
+.done-toggle input{accent-color:var(--ok);width:16px;height:16px;cursor:pointer}
+details.concept.is-done summary .t{color:var(--ok)}
+.chips{display:flex;flex-wrap:wrap;gap:6px;margin:10px 0 0}
+.chip{font-size:12px;padding:3px 9px;border-radius:99px;background:var(--surface-2);border:1px solid var(--line)}
+.chip.lesson{background:var(--ok-soft);border-color:transparent}
+.chip a{color:inherit}
+.tree{white-space:pre}
+footer{margin-top:64px;color:var(--muted);font-size:13px;border-top:1px solid var(--line);padding-top:16px}
+@media (max-width: 900px){
+  .layout{grid-template-columns:1fr;gap:0}
+  nav.toc{position:static;height:auto;padding:24px 0 0}
+  nav.toc ol{display:flex;flex-wrap:wrap;gap:4px}
+  .flow{grid-template-columns:1fr}
+  .steps{flex-direction:row;flex-wrap:wrap}
+  .steps .arrow{display:none}
+}
+</style>
+</head>
+<body>
+<div class="layout">
+
+<nav class="toc" aria-label="Mục lục">
+  <div class="brand">Driver · realworld-api</div>
+  <div class="sub">Đọc hiểu dự án &amp; học NestJS</div>
+  <div class="sub"><a href="hoc-nestjs.html">🎯 6 kiến thức trọng tâm →</a></div>
+  <div class="sub"><a href="kien-thuc.html">📒 Sổ kiến thức đã dùng →</a></div>
+  <div class="sub"><a href="tracker.html">🐞 Sổ theo dõi vấn đề →</a></div>
+  <ol>
+    <li><a href="#chuan-bi">0. Chuẩn bị</a></li>
+    <li><a href="#tong-quan">1. Bức tranh tổng</a></li>
+    <li><a href="#request">2. Theo chân một request</a></li>
+    <li><a href="#khai-niem">3. Khái niệm NestJS</a></li>
+    <li><a href="#typescript">4. TypeScript / ESM</a></li>
+    <li><a href="#lo-trinh">5. Thứ tự đọc</a></li>
+    <li><a href="#bai-tap">6. Bài tập</a></li>
+    <li><a href="#thuat-ngu">7. Thuật ngữ</a></li>
+  </ol>
+  <div class="progress" aria-live="polite">
+    <small id="progressText">Đã hiểu 0/12 khái niệm</small>
+    <div class="bar"><i id="progressBar"></i></div>
+  </div>
+</nav>
+
+<main>
+  <h1>Đọc hiểu dự án &amp; học NestJS qua code thật</h1>
+  <p class="lead">Đi từ bức tranh tổng, theo chân một request thật qua từng tầng, rồi tới từng khái niệm NestJS. Mỗi khái niệm chỉ ra file trong dự án và bài học tương ứng trong <code>learning/lessons/</code>.</p>
+  <div class="callout note"><b>Cách đọc</b>Mở trang này một bên, VS Code một bên. Link tới file mã nguồn mở bản đọc trong trình duyệt; muốn sửa thì mở cùng đường dẫn trong VS Code. Gặp ô <em>Thử</em> thì làm thật, đừng chỉ đọc.</div>
+
+  <!-- 0 -->
+  <h2 id="chuan-bi">0. Chuẩn bị (5 phút)</h2>
+<pre><code>cd realworld-api
+npm run db:up          <span class="c"># Postgres trong Docker</span>
+npm run start:dev      <span class="c"># app ở http://localhost:3000/api, tự reload khi sửa code</span></code></pre>
+  <p>Mở <a href="../requests/auth.http"><code>requests/auth.http</code></a> trong VS Code (extension REST Client), bấm <b>Send Request</b> ở request 1 và 2. Bạn vừa đăng ký và đăng nhập. Phần còn lại giải thích chuyện gì đã xảy ra bên trong.</p>
+
+  <!-- 1 -->
+  <h2 id="tong-quan">1. Bức tranh tổng</h2>
+  <p><b>Dự án làm gì:</b> backend API clone Medium theo spec <a href="realworld-spec/README.md">RealWorld</a>. Không có giao diện: client (web, mobile, Postman) gọi API và nhận JSON.</p>
+  <p><b>Đã có:</b> đăng ký, đăng nhập, xem/sửa user hiện tại (JWT). <b>Chưa có:</b> articles, comments, profiles/follow, favorites.</p>
+<pre class="tree"><code>realworld-api/
+├── src/
+│   ├── main.ts             <span class="c">← điểm khởi động</span>
+│   ├── app.setup.ts        <span class="c">← cấu hình chung: prefix /api, validation</span>
+│   ├── app.module.ts       <span class="c">← module gốc: ghép mọi thứ lại</span>
+│   ├── auth/               <span class="c">← JWT: guard kiểm token, decorator lấy user</span>
+│   ├── users/              <span class="c">← controller, service, DTO, entity, mapper</span>
+│   ├── tags/               <span class="c">← feature nhỏ nhất, đọc trước để làm quen</span>
+│   ├── articles/ comments/ <span class="c">← mới có entity (bảng), chưa có API</span>
+│   ├── common/             <span class="c">← dùng chung: định dạng lỗi, validator, base entity</span>
+│   ├── database/           <span class="c">← cấu hình TypeORM + migrations</span>
+│   └── i18n/{en,vi}/       <span class="c">← bản dịch</span>
+├── test/                   <span class="c">← e2e test: HTTP thật vào app thật + DB thật</span>
+├── docs/
+│   ├── realworld-spec/     <span class="c">← spec + bộ test chính thức (Hurl)</span>
+│   └── features/auth/      <span class="c">← research → review → qa của feature auth</span>
+└── requests/auth.http      <span class="c">← test tay bằng REST Client</span></code></pre>
+
+  <h3>Ba ý tưởng xuyên suốt</h3>
+  <div class="ideas">
+    <div class="idea"><div class="n">01</div><h4>Module hoá</h4><p>Mỗi feature là một thư mục + một <code>Module</code> tự chứa controller, service, entity của nó.</p></div>
+    <div class="idea"><div class="n">02</div><h4>Dependency Injection</h4><p>Class không tự <code>new</code> thứ nó cần: khai báo trong constructor, Nest đưa vào.</p></div>
+    <div class="idea"><div class="n">03</div><h4>Decorator</h4><p><code>@Controller</code>, <code>@IsEmail</code>, <code>@Column</code>… gắn "nhãn" để Nest, class-validator, TypeORM biết phải làm gì.</p></div>
+  </div>
+
+  <!-- 2 -->
+  <h2 id="request">2. Theo chân một request: <code>PUT /api/user</code></h2>
+  <p>Request này đi qua nhiều tầng nhất trong code hiện có. Gửi request 4 trong <code>auth.http</code>, rồi bấm lần lượt từng bước:</p>
+<pre><code>PUT /api/user
+Authorization: Token eyJhbGci...
+{"user": {"bio": "I like to skateboard"}}</code></pre>
+
+  <div class="flow">
+    <div class="steps" role="tablist" aria-label="Các tầng request đi qua" id="steps"></div>
+    <div class="panel" role="tabpanel" id="panel" aria-live="polite"></div>
+  </div>
+  <div class="callout try"><b>Thử</b>Gửi request 10–12 (không token / <code>Bearer</code> / token hỏng): request dừng ở bước nào, dòng nào ném lỗi? Gửi request 7: decorator nào sinh ra từng câu lỗi?</div>
+  <p>Đọc thêm về thứ tự middleware → guard → interceptor → pipe → controller → filter: <a href="../../learning/lessons/17-faq/08-request-lifecycle/README.md">17-faq/08-request-lifecycle</a>.</p>
+
+  <!-- 3 -->
+  <h2 id="khai-niem">3. Khái niệm NestJS trong dự án</h2>
+  <p>Mỗi khái niệm: <b>là gì</b>, <b>ở đâu trong dự án</b>, <b>bài học</b> trong <code>learning/lessons/</code> (chạy được bằng <code>npm run lesson -- &lt;thư mục&gt;</code>). Đọc xong, tích <em>Đã hiểu</em>: tiến độ lưu trên trình duyệt này.</p>
+  <div id="concepts"></div>
+
+  <!-- 4 -->
+  <h2 id="typescript">4. TypeScript / ESM cần biết khi đọc code</h2>
+  <div class="tablewrap"><table>
+    <thead><tr><th>Thấy trong code</th><th>Nghĩa</th></tr></thead>
+    <tbody>
+      <tr><td><code>import { X } from './x.js'</code> dù file là <code>x.ts</code></td><td>Dự án là ESM: Node chạy file <code>.js</code> đã build, nên import ghi đuôi <code>.js</code></td></tr>
+      <tr><td><code>import type { X }</code></td><td>Chỉ lấy kiểu, bị xoá khi build, không tạo phụ thuộc lúc chạy</td></tr>
+      <tr><td><code>private readonly users: Repository&lt;User&gt;</code> trong constructor</td><td>Khai báo và gán thuộc tính trong một dòng (parameter property)</td></tr>
+      <tr><td><code>@Something()</code></td><td>Decorator: chạy lúc định nghĩa class, gắn metadata</td></tr>
+      <tr><td><code>user?.password ?? DUMMY_HASH</code></td><td><code>?.</code> không lỗi khi <code>user</code> là undefined · <code>??</code> dùng vế phải khi vế trái là null/undefined</td></tr>
+      <tr><td><code>dto.bio || null</code></td><td><code>""</code> cũng là "falsy" nên thành <code>null</code> (khác <code>??</code>)</td></tr>
+      <tr><td><code>import.meta.dirname</code></td><td>Thư mục của file hiện tại (ESM không có <code>__dirname</code>)</td></tr>
+      <tr><td><code>Promise&lt;UserEnvelope&gt;</code> + <code>async/await</code></td><td>Hàm bất đồng bộ: truy vấn DB, hash mật khẩu</td></tr>
+    </tbody>
+  </table></div>
+
+  <!-- 5 -->
+  <h2 id="lo-trinh">5. Thứ tự đọc gợi ý (2–3 giờ)</h2>
+  <ol>
+    <li><a href="../src/tags/tags.controller.ts"><code>src/tags/</code></a>: feature nhỏ nhất, đủ module / controller / service / repository. 10 phút.</li>
+    <li><a href="../src/main.ts"><code>main.ts</code></a> → <a href="../src/app.setup.ts"><code>app.setup.ts</code></a> → <a href="../src/app.module.ts"><code>app.module.ts</code></a>: app khởi động thế nào.</li>
+    <li><code>src/users/</code>: <a href="../src/users/users.module.ts">users.module</a> → <a href="../src/users/users.controller.ts">users.controller</a> → <a href="../src/users/dto/register-user.dto.ts">dto/register-user.dto</a> → <a href="../src/users/users.service.ts">users.service</a> (<code>register</code>, <code>login</code>) → <a href="../src/users/user.mapper.ts">user.mapper</a>.</li>
+    <li><a href="../src/auth/jwt-auth.guard.ts"><code>src/auth/</code></a> → <a href="../src/users/user.controller.ts">user.controller</a> → <code>users.service</code> (<code>getCurrent</code>, <code>update</code>).</li>
+    <li><a href="../src/common/http-errors.ts"><code>src/common/</code></a>: các mảnh dùng chung.</li>
+    <li>Entity + migration: <a href="../src/users/user.entity.ts">user.entity</a>, <a href="../src/articles/article.entity.ts">article.entity</a>, file trong <code>src/database/migrations/</code>.</li>
+    <li><a href="../test/auth.e2e-spec.ts"><code>test/auth.e2e-spec.ts</code></a> song song với <a href="features/auth/research.md">research.md</a>.</li>
+    <li><a href="features/auth/review.md">review.md</a> và <a href="features/auth/qa.md">qa.md</a>: các lỗi thật đã gặp và cách sửa. Mỗi lỗi là một bài học.</li>
+  </ol>
+
+  <!-- 6 -->
+  <h2 id="bai-tap">6. Bài tập</h2>
+  <p>Làm trên nhánh riêng, chạy test sau mỗi bài.</p>
+  <div class="tablewrap"><table>
+    <thead><tr><th>#</th><th>Bài</th><th>Học được</th><th>Gợi ý</th></tr></thead>
+    <tbody>
+      <tr><td>1</td><td>Đổi câu tiếng Việt của <code>errors.invalid</code>, gửi request 9 với <code>?lang=vi</code></td><td>i18n</td><td>chỉ sửa <code>src/i18n/vi/errors.json</code></td></tr>
+      <tr><td>2</td><td>Bật <code>DB_LOGGING=true</code> trong <code>.env</code>, gửi request 1–4, đọc SQL in ra</td><td>TypeORM sinh SQL</td><td><code>login</code> có cột password trong SELECT, <code>GET /user</code> thì không</td></tr>
+      <tr><td>3</td><td>Thêm một <code>it()</code> trong <code>test/user.e2e-spec.ts</code>: đổi <code>image</code> rồi đổi về <code>null</code></td><td>e2e test</td><td>chép case AUTH-07</td></tr>
+      <tr><td>4</td><td>Thêm <code>GET /api/tags/count</code> trả <code>{"count": n}</code></td><td>controller + service + repository</td><td><code>this.tags.count()</code></td></tr>
+      <tr><td>5</td><td>Thêm cột <code>locale</code> (mặc định <code>'en'</code>) cho <code>users</code> bằng migration; revert rồi run lại</td><td>migration</td><td>README dự án, mục 2.5</td></tr>
+      <tr><td>6</td><td>Đoán response của <code>{"user":{"username":123}}</code> khi đọc <code>validationExceptionFactory</code>, rồi gửi thử</td><td>pipe + exception</td><td>so với QA-auth-02 trong <code>qa.md</code></td></tr>
+      <tr><td>7</td><td>Vẽ lại sơ đồ mục 2 cho <code>POST /api/users/login</code> (không có guard)</td><td>request lifecycle</td><td>—</td></tr>
+    </tbody>
+  </table></div>
+
+  <!-- 7 -->
+  <h2 id="thuat-ngu">7. Thuật ngữ</h2>
+  <div class="tablewrap"><table>
+    <thead><tr><th>Tiếng Anh</th><th>Nghĩa trong dự án</th></tr></thead>
+    <tbody>
+      <tr><td>Module</td><td>Gói một feature: controller + provider + import</td></tr>
+      <tr><td>Controller</td><td>Lớp nhận request HTTP theo route</td></tr>
+      <tr><td>Provider / Service</td><td>Lớp <code>@Injectable()</code> chứa nghiệp vụ, được DI đưa vào nơi cần</td></tr>
+      <tr><td>DI</td><td>Nest tự tạo và truyền phụ thuộc qua constructor</td></tr>
+      <tr><td>DTO</td><td>Class mô tả dữ liệu vào, kèm luật kiểm tra</td></tr>
+      <tr><td>Pipe</td><td>Biến đổi / kiểm tra tham số trước khi vào controller</td></tr>
+      <tr><td>Guard</td><td>Quyết định request có được đi tiếp (đăng nhập, quyền)</td></tr>
+      <tr><td>Entity</td><td>Class ↔ bảng DB</td></tr>
+      <tr><td>Repository</td><td>Đối tượng truy vấn một bảng (<code>find</code>, <code>save</code>…)</td></tr>
+      <tr><td>Migration</td><td>File thay đổi schema, chạy được và hoàn tác được</td></tr>
+      <tr><td>JWT</td><td>Chuỗi đã ký chứa <code>{ sub: userId }</code>, client gửi lại mỗi request</td></tr>
+      <tr><td>Mapper</td><td>Hàm biến entity thành JSON trả ra ngoài</td></tr>
+      <tr><td>e2e test</td><td>Test gửi HTTP thật vào app thật</td></tr>
+    </tbody>
+  </table></div>
+
+  <footer>Vướng chỗ nào: mở Claude Code <b>trong thư mục <code>realworld-api</code></b> và hỏi kèm tên file. <code>CLAUDE.md</code> và <code>.claude/rules/</code> giúp câu trả lời bám đúng dự án.</footer>
+</main>
+</div>
+
+<script>
+// ---------- Dữ liệu: các tầng của request PUT /api/user ----------
+const STEPS = [
+  { t: 'Middleware i18n', where: 'src/app.module.ts · I18nModule', file: '../src/app.module.ts',
+    body: `<p><code>I18nModule</code> tự gắn một middleware cho mọi route. Nó đọc <code>?lang=vi</code>, header <code>x-lang</code> hoặc <code>Accept-Language</code> và nhớ ngôn ngữ cho <b>cả request</b>. Nhờ vậy guard, pipe, service gọi <code>t('errors.taken')</code> đều ra đúng tiếng.</p>
+<pre><code>resolvers: [
+  new QueryLocaleResolver('lang'),     <span class="c">// ?lang=vi</span>
+  new HeaderLocaleResolver('x-lang'),  <span class="c">// x-lang: vi</span>
+  new AcceptLanguageLocaleResolver(),  <span class="c">// Accept-Language</span>
+]</code></pre>` },
+  { t: 'Guard', where: 'src/auth/jwt-auth.guard.ts · JwtAuthGuard', file: '../src/auth/jwt-auth.guard.ts',
+    body: `<p>Guard trả lời "<b>được vào không?</b>". Hàm <code>canActivate()</code> trả <code>true</code> hoặc ném exception. Gắn ở controller bằng <code>@UseGuards(JwtAuthGuard)</code>.</p>
+<pre><code>const token = extractToken(request);   <span class="c">// "Token &lt;jwt&gt;", không phải Bearer</span>
+if (!token) throw errorsException(401, 'token', 'errors.tokenMissing');
+const payload = await this.jwt.verifyAsync(token); <span class="c">// chữ ký + hạn dùng</span>
+request.auth = { userId: payload.sub, token };</code></pre>`,
+    fail: 'Sai ở đây → <code>401 {"errors":{"token":["is missing" | "is invalid"]}}</code>, request dừng.' },
+  { t: 'Pipe (validation)', where: 'src/app.setup.ts · I18nValidationPipe', file: '../src/app.setup.ts',
+    body: `<p>Pipe toàn cục nhìn kiểu tham số của controller (<code>UpdateUserRequestDto</code>). <b>class-transformer</b> biến JSON thành object của class đó, <b>class-validator</b> kiểm decorator trên từng field.</p>
+<pre><code>new I18nValidationPipe({
+  whitelist: true,   <span class="c">// field lạ (vd. id) bị bỏ</span>
+  transform: true,   <span class="c">// JSON → instance của DTO</span>
+  exceptionFactory: validationExceptionFactory, <span class="c">// → định dạng lỗi spec</span>
+})</code></pre>
+<p>Luật của từng field: <a href="../src/users/dto/update-user.dto.ts">dto/update-user.dto.ts</a>.</p>`,
+    fail: 'Sai ở đây → <code>422 {"errors":{"email":["is invalid"]}}</code>, request dừng.' },
+  { t: 'Controller', where: 'src/users/user.controller.ts · UserController.update', file: '../src/users/user.controller.ts',
+    body: `<p>Controller <b>mỏng</b>: khai báo route, lấy dữ liệu từ request, gọi service. Không có <code>if</code>, không truy vấn DB.</p>
+<pre><code>@Controller('user')
+@UseGuards(JwtAuthGuard)
+export class UserController {
+  @Put()
+  update(@CurrentAuth() auth: AuthContext, @Body() body: UpdateUserRequestDto) {
+    return this.usersService.update(auth.userId, body.user);
+  }
+}</code></pre>` },
+  { t: 'Service', where: 'src/users/users.service.ts · update()', file: '../src/users/users.service.ts',
+    body: `<p>Mọi quyết định nghiệp vụ nằm ở đây: kiểm username/email có bị người khác dùng, hash mật khẩu, biến <code>""</code> thành <code>null</code>, ký token mới.</p>
+<pre><code>if (dto.username !== undefined || email !== undefined) {
+  await this.assertAvailable(...);          <span class="c">// trùng → 409</span>
+}
+if (dto.password !== undefined) user.password = await hash(dto.password, 10);
+if (dto.bio !== undefined) user.bio = dto.bio || null;
+await this.saveOrConflict(user);</code></pre>`,
+    fail: 'Trùng username/email → <code>409 {"errors":{"username":["has already been taken"]}}</code>.' },
+  { t: 'Repository (TypeORM)', where: 'Repository<User> trong constructor của service', file: '../src/users/users.service.ts',
+    body: `<p>Service nhận repository qua DI: <code>@InjectRepository(User) private readonly users: Repository&lt;User&gt;</code>. Gọi <code>findOneBy({ id })</code>, <code>save(user)</code>: TypeORM tự sinh SQL.</p>
+<div class="callout try" style="margin:10px 0 0"><b>Thử</b>Đặt <code>DB_LOGGING=true</code> trong <code>.env</code>, gửi lại request: câu SQL thật in ra console của <code>start:dev</code>.</div>` },
+  { t: 'Mapper → response', where: 'user.mapper.ts · toUserView, rồi controller bọc {user}', file: '../src/users/user.mapper.ts',
+    body: `<p>Entity <code>User</code> có <code>password</code>. Mapper chỉ chép đúng 5 field spec cho phép. <b>Không bao giờ trả entity thẳng ra ngoài.</b></p>
+<pre><code><span class="c">// user.mapper.ts — service trả UserView</span>
+return { email, token, username, bio, image };
+<span class="c">// user.controller.ts — controller bọc theo spec</span>
+return { user: await this.usersService.update(auth.userId, body.user) };</code></pre>
+<p>Client nhận <code>200</code>. Có lỗi ở bất kỳ bước nào → exception → <code>AllExceptionsFilter</code> đổi thành <code>{"errors": …}</code>, không cần <code>try/catch</code> ở controller.</p>` },
+];
+
+// ---------- Dữ liệu: 12 khái niệm ----------
+const L = '../../learning/lessons/';
+const CONCEPTS = [
+  { id:'module', t:'Module: đơn vị đóng gói',
+    body:`<pre><code>@Module({
+  imports: [TypeOrmModule.forFeature([User]), AuthModule], <span class="c">// cần gì từ module khác</span>
+  controllers: [UsersController, UserController],          <span class="c">// route HTTP</span>
+  providers: [UsersService],                               <span class="c">// class để DI</span>
+})
+export class UsersModule {}</code></pre>
+<p>Provider chỉ thấy được trong module của nó, trừ khi module đó <code>exports</code> và module kia <code>imports</code>. Ví dụ <code>AuthModule</code> có <code>exports: [JwtModule]</code> nên <code>UsersModule</code> dùng được <code>JwtService</code>.</p>`,
+    files:[['users.module.ts','../src/users/users.module.ts'],['auth.module.ts','../src/auth/auth.module.ts'],['app.module.ts','../src/app.module.ts']],
+    lessons:[['01-overview/04-modules','01-overview/04-modules']] },
+  { id:'controller', t:'Controller & routing',
+    body:`<p><code>@Controller('users')</code> + <code>@Post('login')</code> = <code>POST /api/users/login</code> (prefix <code>/api</code> từ <code>setGlobalPrefix</code>).</p>
+<p><code>@HttpCode(HttpStatus.OK)</code>: Nest mặc định POST trả 201, nhưng login phải trả 200.</p>
+<p><code>/api/users</code> (số nhiều: đăng ký, đăng nhập) và <code>/api/user</code> (số ít: user hiện tại) là <b>hai controller khác nhau</b>, đúng spec RealWorld.</p>`,
+    files:[['users.controller.ts','../src/users/users.controller.ts'],['user.controller.ts','../src/users/user.controller.ts']],
+    lessons:[['01-overview/02-controllers','01-overview/02-controllers']] },
+  { id:'di', t:'Provider & Dependency Injection',
+    body:`<pre><code>@Injectable()
+export class UsersService {
+  constructor(
+    @InjectRepository(User) private readonly users: Repository&lt;User&gt;,
+    private readonly jwt: JwtService,
+  ) {}</code></pre>
+<p>Bạn không bao giờ viết <code>new UsersService(...)</code>. Nest đọc kiểu tham số constructor (nhờ <code>emitDecoratorMetadata</code> trong tsconfig), tìm provider tương ứng, tạo <b>một lần</b> (singleton) và đưa vào. Khi test có thể thay <code>JwtService</code> thật bằng bản giả.</p>`,
+    files:[['users.service.ts','../src/users/users.service.ts']],
+    lessons:[['01-overview/03-providers','01-overview/03-providers'],['02-fundamentals/01-custom-providers','02-fundamentals/01-custom-providers']] },
+  { id:'dynamic', t:'Dynamic module: forRoot / forRootAsync / forFeature',
+    body:`<p>Module thư viện cần cấu hình thì gọi hàm tĩnh trả về module đã cấu hình:</p>
+<ul>
+<li><code>ConfigModule.forRoot({ isGlobal: true })</code>: đọc <code>.env</code>, dùng <code>ConfigService</code> ở mọi nơi.</li>
+<li><code>TypeOrmModule.forRootAsync({ useFactory })</code>: kết nối DB, một lần ở AppModule.</li>
+<li><code>TypeOrmModule.forFeature([User])</code>: đăng ký repository <code>User</code> cho riêng UsersModule.</li>
+<li><code>JwtModule.registerAsync({ inject: [ConfigService], useFactory })</code>: <b>Async</b> vì phải đợi <code>ConfigService</code> để đọc <code>JWT_SECRET</code>.</li>
+</ul>`,
+    files:[['app.module.ts','../src/app.module.ts'],['auth.module.ts','../src/auth/auth.module.ts']],
+    lessons:[['02-fundamentals/03-dynamic-modules','02-fundamentals/03-dynamic-modules'],['02-fundamentals/02-async-providers','02-fundamentals/02-async-providers'],['03-application/01-configuration','03-application/01-configuration']] },
+  { id:'dto', t:'DTO + Pipe + class-validator',
+    body:`<p>DTO (Data Transfer Object) = class mô tả hình dạng dữ liệu vào. Body spec luôn bọc key <code>{"user": {...}}</code> nên có <b>hai lớp</b>:</p>
+<pre><code>export class RegisterUserDto {          <span class="c">// phần bên trong</span>
+  @Trim() @IsNotEmpty() @IsEmail() @MaxLength(255)
+  email: string;
+}
+export class RegisterRequestDto {       <span class="c">// lớp bọc</span>
+  @Wrapped(() =&gt; RegisterUserDto)       <span class="c">// IsDefined + IsObject + ValidateNested + Type</span>
+  user: RegisterUserDto;
+}</code></pre>
+<p><b>Điểm tinh tế:</b> <code>@IsOptional()</code> bỏ qua cả <code>null</code>, nên field <code>bio</code> nhận <code>null</code>. Còn <code>email</code> khi cập nhật <b>không</b> được <code>null</code>, nên dùng <code>ValidateIf(v =&gt; v !== undefined)</code> thay vì <code>IsOptional</code>.</p>`,
+    files:[['register-user.dto.ts','../src/users/dto/register-user.dto.ts'],['update-user.dto.ts','../src/users/dto/update-user.dto.ts'],['common/validators.ts','../src/common/validators.ts']],
+    lessons:[['01-overview/07-pipes','01-overview/07-pipes'],['03-application/02-validation','03-application/02-validation']] },
+  { id:'guard', t:'Guard',
+    body:`<p>Guard trả lời "request này có được đi tiếp không", chạy <b>trước</b> pipe. Xem bước 2 trong sơ đồ ở mục 2.</p>`,
+    files:[['jwt-auth.guard.ts','../src/auth/jwt-auth.guard.ts']],
+    lessons:[['01-overview/08-guards','01-overview/08-guards'],['05-security/01-authentication','05-security/01-authentication']] },
+  { id:'decorator', t:'Custom decorator',
+    body:`<pre><code>export const CurrentAuth = createParamDecorator(
+  (_data, context: ExecutionContext) =&gt; context.switchToHttp().getRequest().auth,
+);
+<span class="c">// dùng: update(@CurrentAuth() auth: AuthContext, ...)</span></code></pre>
+<p>Guard gắn <code>request.auth</code>, decorator lấy ra cho gọn: controller không phải đụng vào <code>request</code>. <code>applyDecorators()</code> gộp nhiều decorator thành một, như <code>Wrapped()</code>.</p>`,
+    files:[['current-auth.decorator.ts','../src/auth/current-auth.decorator.ts'],['common/validators.ts','../src/common/validators.ts']],
+    lessons:[['01-overview/10-custom-decorators','01-overview/10-custom-decorators'],['02-fundamentals/08-execution-context','02-fundamentals/08-execution-context']] },
+  { id:'exception', t:'Exception',
+    body:`<p><code>throw new HttpException(body, status)</code> ở bất kỳ đâu → Nest trả response. Dự án bọc lại thành <code>errorsException()</code> để body luôn đúng dạng spec <code>{"errors": {...}}</code>.</p>
+<p>Lỗi DB trùng khoá (mã Postgres <code>23505</code>) được bắt trong <code>saveOrConflict()</code> và đổi thành 409. Không bắt thì client nhận 500.</p>`,
+    files:[['common/http-errors.ts','../src/common/http-errors.ts'],['validation-exception.factory.ts','../src/common/validation-exception.factory.ts']],
+    lessons:[['01-overview/06-exception-filters','01-overview/06-exception-filters']] },
+  { id:'typeorm', t:'TypeORM: entity, quan hệ, repository',
+    body:`<ul>
+<li><a href="../src/users/user.entity.ts">user.entity.ts</a>: <code>@Entity('users')</code>, <code>@Column({ unique: true })</code>. <code>password</code> có <code>select: false</code>: mặc định không bao giờ được SELECT, muốn đọc phải <code>addSelect</code> (xem <code>login()</code>).</li>
+<li><a href="../src/articles/article.entity.ts">article.entity.ts</a>: đủ ba loại quan hệ: <code>@ManyToOne</code> (tác giả), <code>@OneToMany</code> (comments), <code>@ManyToMany</code> + <code>@JoinTable</code> (tags, favorites).</li>
+<li><code>follows</code> là <code>@ManyToMany</code> <b>tự tham chiếu</b> User ↔ User.</li>
+<li><code>Relation&lt;User&gt;</code>: bọc kiểu khi hai entity import lẫn nhau, tránh lỗi ESM "Cannot access before initialization".</li>
+</ul>`,
+    files:[['user.entity.ts','../src/users/user.entity.ts'],['article.entity.ts','../src/articles/article.entity.ts'],['base.entity.ts','../src/common/base.entity.ts']],
+    lessons:[['04-data/02-typeorm','04-data/02-typeorm']] },
+  { id:'migration', t:'Migration',
+    body:`<p>Bảng không tự sinh từ entity (<code>synchronize: false</code>). Mỗi thay đổi schema là một file migration có <code>up()</code> (áp dụng) và <code>down()</code> (hoàn tác).</p>
+<pre><code>npm run migration:generate -- src/database/migrations/AddUserLocale
+npm run migration:run
+npm run migration:revert &amp;&amp; npm run migration:run</code></pre>
+<p><a href="../src/database/typeorm.options.ts">typeorm.options.ts</a> là <b>một</b> cấu hình dùng chung cho app và CLI. Đọc file <code>InitSchema</code> trong <code>src/database/migrations/</code>: chính là SQL tạo 7 bảng.</p>`,
+    files:[['typeorm.options.ts','../src/database/typeorm.options.ts'],['data-source.ts','../src/database/data-source.ts'],['README · Bước 2','../README.md']],
+    lessons:[['04-data/02-typeorm','04-data/02-typeorm']] },
+  { id:'i18n', t:'i18n: đa ngôn ngữ',
+    body:`<p>Key <code>errors.taken</code> = file <code>errors.json</code>, khoá <code>taken</code>. Câu <code>en</code> phải <b>nguyên văn</b> spec (<code>has already been taken</code>) vì bộ test chính thức so khớp chuỗi.</p>
+<p>Lỗi validation tự dịch theo tên constraint: <code>@IsEmail</code> hỏng → tra <code>validation.isEmail</code>.</p>`,
+    files:[['i18n/en/errors.json','../src/i18n/en/errors.json'],['i18n/vi/errors.json','../src/i18n/vi/errors.json'],['i18n/en/validation.json','../src/i18n/en/validation.json']],
+    lessons:[['03-application/09-internationalization','03-application/09-internationalization']] },
+  { id:'testing', t:'Testing (e2e)',
+    body:`<ul>
+<li><a href="../test/support/create-test-app.ts">create-test-app.ts</a> dựng app <b>giống hệt</b> <code>main.ts</code> (nhờ <code>configureApp</code>) nối vào DB thật.</li>
+<li>Mỗi <code>it('AUTH-xx …')</code> ứng với một case trong <a href="features/auth/research.md">research.md</a>. <code>supertest</code> gửi HTTP thật vào app.</li>
+<li><code>uid()</code> tạo username/email khác nhau mỗi lần, chạy lại bao nhiêu lần cũng được, không cần dọn DB.</li>
+</ul>
+<pre><code>npx vitest run --config ./vitest.config.e2e.ts test/auth.e2e-spec.ts</code></pre>`,
+    files:[['auth.e2e-spec.ts','../test/auth.e2e-spec.ts'],['user.e2e-spec.ts','../test/user.e2e-spec.ts']],
+    lessons:[['02-fundamentals/12-testing','02-fundamentals/12-testing']] },
+];
+
+// ---------- Lưu tiến độ (chỉ trên trình duyệt này) ----------
+const KEY = 'realworld-driver-done';
+function loadDone(){ try { return new Set(JSON.parse(localStorage.getItem(KEY) || '[]')); } catch { return new Set(); } }
+function saveDone(set){ try { localStorage.setItem(KEY, JSON.stringify([...set])); } catch {} }
+const done = loadDone();
+
+// ---------- Sơ đồ request ----------
+const stepsEl = document.getElementById('steps');
+const panelEl = document.getElementById('panel');
+let current = 0;
+STEPS.forEach((s, i) => {
+  if (i > 0) { const a = document.createElement('div'); a.className = 'arrow'; a.textContent = '▼'; a.setAttribute('aria-hidden','true'); stepsEl.appendChild(a); }
+  const b = document.createElement('button');
+  b.type = 'button'; b.setAttribute('role','tab'); b.id = 'step-' + i;
+  b.innerHTML = `<span class="num">${i + 1}</span><span>${s.t}</span>`;
+  b.addEventListener('click', () => showStep(i));
+  stepsEl.appendChild(b);
+});
+function showStep(i){
+  current = i;
+  const s = STEPS[i];
+  stepsEl.querySelectorAll('button').forEach((b, j) => {
+    b.setAttribute('aria-selected', String(j === i));
+    b.tabIndex = j === i ? 0 : -1;
+  });
+  panelEl.setAttribute('aria-labelledby', 'step-' + i);
+  panelEl.innerHTML = `<h4>${i + 1}. ${s.t}</h4>
+    <div class="where"><a href="${s.file}">${s.where}</a></div>
+    ${s.body}
+    ${s.fail ? `<div class="fail">${s.fail}</div>` : ''}
+    <div class="navbtns">
+      <button type="button" id="prev" ${i === 0 ? 'disabled' : ''}>← Bước trước</button>
+      <button type="button" id="next" ${i === STEPS.length - 1 ? 'disabled' : ''}>Bước sau →</button>
+    </div>`;
+  panelEl.querySelector('#prev').onclick = () => showStep(Math.max(0, current - 1));
+  panelEl.querySelector('#next').onclick = () => showStep(Math.min(STEPS.length - 1, current + 1));
+}
+stepsEl.addEventListener('keydown', (e) => {
+  if (!['ArrowDown','ArrowUp','ArrowRight','ArrowLeft'].includes(e.key)) return;
+  e.preventDefault();
+  const d = (e.key === 'ArrowDown' || e.key === 'ArrowRight') ? 1 : -1;
+  showStep((current + d + STEPS.length) % STEPS.length);
+  document.getElementById('step-' + current).focus();
+});
+showStep(0);
+
+// ---------- Thẻ khái niệm ----------
+const conceptsEl = document.getElementById('concepts');
+CONCEPTS.forEach((c, i) => {
+  const d = document.createElement('details');
+  d.className = 'concept' + (done.has(c.id) ? ' is-done' : '');
+  d.id = 'k-' + c.id;
+  const files = c.files.map(([n, h]) => `<span class="chip"><a href="${h}">${n}</a></span>`).join('');
+  const lessons = c.lessons.map(([n, p]) => `<span class="chip lesson"><a href="${L}${p}/README.md">📘 ${n}</a></span>`).join('');
+  d.innerHTML = `<summary>
+      <span class="chev" aria-hidden="true">▶</span>
+      <span class="t">3.${i + 1} ${c.t}</span>
+      <label class="done-toggle" onclick="event.stopPropagation()">
+        <input type="checkbox" ${done.has(c.id) ? 'checked' : ''} aria-label="Đã hiểu: ${c.t}"> Đã hiểu
+      </label>
+    </summary>
+    <div class="body">${c.body}<div class="chips">${files}${lessons}</div></div>`;
+  d.querySelector('input').addEventListener('change', (e) => {
+    e.target.checked ? done.add(c.id) : done.delete(c.id);
+    d.classList.toggle('is-done', e.target.checked);
+    saveDone(done); updateProgress();
+  });
+  conceptsEl.appendChild(d);
+});
+function updateProgress(){
+  const n = CONCEPTS.filter(c => done.has(c.id)).length;
+  document.getElementById('progressText').textContent = `Đã hiểu ${n}/${CONCEPTS.length} khái niệm`;
+  document.getElementById('progressBar').style.width = (n / CONCEPTS.length * 100) + '%';
+}
+updateProgress();
+
+// ---------- Đánh dấu mục đang đọc trong mục lục ----------
+const links = [...document.querySelectorAll('nav.toc a')];
+const io = new IntersectionObserver((entries) => {
+  entries.forEach(en => {
+    if (!en.isIntersecting) return;
+    links.forEach(a => a.classList.toggle('active', a.getAttribute('href') === '#' + en.target.id));
+  });
+}, { rootMargin: '-10% 0px -80% 0px' });
+document.querySelectorAll('main h2[id]').forEach(h => io.observe(h));
+</script>
+</body>
+</html>

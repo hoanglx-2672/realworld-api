@@ -1,0 +1,665 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Học NestJS qua dự án</title>
+<style>
+:root{
+  --bg:#fbfaf7; --surface:#ffffff; --surface-2:#f3f1ec; --text:#1d1c1a; --muted:#6b6862;
+  --line:#e4e0d8; --accent:#c2410c; --accent-soft:#fdeee5; --ok:#15803d; --ok-soft:#e7f5ec;
+  --code-bg:#f5f3ee; --code-text:#2b2925; --warn:#a16207; --warn-soft:#fff7e0;
+  --gap:#7c3aed; --gap-soft:#f1eafe;
+  --mono: ui-monospace, "Cascadia Code", "JetBrains Mono", Consolas, monospace;
+  --sans: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#151412; --surface:#1d1c19; --surface-2:#25231f; --text:#ece9e2; --muted:#a29e95;
+    --line:#34312b; --accent:#fb923c; --accent-soft:#3a2416; --ok:#4ade80; --ok-soft:#173022;
+    --code-bg:#211f1b; --code-text:#e6e2d9; --warn:#facc15; --warn-soft:#332a12;
+    --gap:#c4b5fd; --gap-soft:#2a2140;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#151412; --surface:#1d1c19; --surface-2:#25231f; --text:#ece9e2; --muted:#a29e95;
+  --line:#34312b; --accent:#fb923c; --accent-soft:#3a2416; --ok:#4ade80; --ok-soft:#173022;
+  --code-bg:#211f1b; --code-text:#e6e2d9; --warn:#facc15; --warn-soft:#332a12;
+  --gap:#c4b5fd; --gap-soft:#2a2140;
+  color-scheme: dark;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);font:15px/1.7 var(--sans)}
+a{color:var(--accent);text-decoration:none} a:hover{text-decoration:underline}
+code{font:13px var(--mono);background:var(--code-bg);color:var(--code-text);padding:1px 5px;border-radius:4px}
+pre{font:13px/1.55 var(--mono);background:var(--code-bg);color:var(--code-text);padding:12px 14px;border-radius:8px;overflow-x:auto;border:1px solid var(--line);margin:10px 0}
+pre code{background:none;padding:0}
+.c{color:var(--muted)} .k{color:var(--accent)}
+.wrap{max-width:1080px;margin:0 auto;padding:0 16px;display:grid;grid-template-columns:230px 1fr;gap:32px}
+nav{position:sticky;top:0;align-self:start;padding:28px 0;max-height:100vh;overflow:auto}
+nav h1{font-size:17px;margin:0 0 4px} nav .sub{color:var(--muted);font-size:13px;margin-bottom:16px}
+nav ol{list-style:none;padding:0;margin:0} nav li{margin:2px 0}
+nav li a{display:flex;gap:8px;align-items:center;padding:6px 8px;border-radius:6px;color:var(--text);font-size:14px}
+nav li a:hover{background:var(--surface-2);text-decoration:none}
+nav li a .dot{width:16px;height:16px;border-radius:50%;border:2px solid var(--line);flex:none;display:grid;place-items:center;font-size:10px}
+nav li a.done .dot{background:var(--ok);border-color:var(--ok);color:#fff}
+.bar{height:6px;background:var(--surface-2);border-radius:3px;margin:14px 0 6px;overflow:hidden}
+.bar i{display:block;height:100%;background:var(--ok);width:0;transition:width .3s}
+main{padding:28px 0 80px;min-width:0}
+header.hero h2{font-size:28px;line-height:1.25;margin:0 0 8px}
+header.hero p{color:var(--muted);margin:0 0 6px;max-width:68ch}
+section.ch{border-top:1px solid var(--line);padding-top:28px;margin-top:36px}
+section.ch>h2{font-size:22px;margin:0 0 4px;display:flex;gap:10px;align-items:baseline}
+section.ch>h2 .n{color:var(--accent);font:600 15px var(--mono)}
+.lead{color:var(--muted);margin:0 0 14px;max-width:72ch}
+h3{font-size:16px;margin:22px 0 6px}
+.file{font:12px var(--mono);color:var(--muted);margin:14px 0 -6px}
+.box{border:1px solid var(--line);border-left:4px solid var(--accent);background:var(--surface);border-radius:8px;padding:10px 14px;margin:12px 0}
+.box.ok{border-left-color:var(--ok);background:var(--ok-soft)}
+.box.warn{border-left-color:var(--warn);background:var(--warn-soft)}
+.box.gap{border-left-color:var(--gap);background:var(--gap-soft)}
+.box b.t{display:block;margin-bottom:2px}
+.box p{margin:4px 0}
+table{border-collapse:collapse;width:100%;font-size:14px;margin:10px 0;display:block;overflow-x:auto}
+th,td{border:1px solid var(--line);padding:6px 10px;text-align:left;vertical-align:top}
+th{background:var(--surface-2);font-weight:600}
+.flow{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin:14px 0;font-size:13px}
+.flow span{padding:6px 10px;border-radius:6px;border:1px solid var(--line);background:var(--surface)}
+.flow span.have{border-color:var(--ok);background:var(--ok-soft)}
+.flow span.miss{border-color:var(--gap);background:var(--gap-soft);border-style:dashed}
+.flow em{color:var(--muted);font-style:normal}
+.task{border:1px dashed var(--line);border-radius:8px;padding:10px 14px;margin:10px 0;background:var(--surface)}
+.task summary{cursor:pointer;font-weight:600}
+.task[open] summary{margin-bottom:6px}
+.done-btn{margin-top:18px;font:600 14px var(--sans);padding:8px 14px;border-radius:8px;border:1px solid var(--line);background:var(--surface);color:var(--text);cursor:pointer}
+.done-btn.on{background:var(--ok);border-color:var(--ok);color:#fff}
+.legend{font-size:13px;color:var(--muted)}
+.legend b{font-weight:600}
+.theme{position:fixed;right:14px;bottom:14px;font:13px var(--sans);padding:6px 10px;border-radius:8px;border:1px solid var(--line);background:var(--surface);color:var(--text);cursor:pointer}
+@media (max-width:820px){
+  .wrap{grid-template-columns:1fr;gap:0}
+  nav{position:static;max-height:none;padding-bottom:0}
+  nav ol{display:flex;flex-wrap:wrap;gap:4px}
+  header.hero h2{font-size:23px}
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+<nav>
+  <h1>Học NestJS qua dự án</h1>
+  <div class="sub">6 kiến thức trọng tâm của Training Guideline, giải thích bằng code thật của realworld-api.</div>
+  <ol id="toc">
+    <li><a href="#c1"><span class="dot"></span>1. Kiến trúc Modular</a></li>
+    <li><a href="#c2"><span class="dot"></span>2. @Module()</a></li>
+    <li><a href="#c3"><span class="dot"></span>3. Routes &amp; Controllers</a></li>
+    <li><a href="#c4"><span class="dot"></span>4. TypeORM + PostgreSQL</a></li>
+    <li><a href="#c5"><span class="dot"></span>5. Authentication JWT</a></li>
+    <li><a href="#c6"><span class="dot"></span>6. Pipes, Filters, Middleware</a></li>
+  </ol>
+  <div class="bar"><i id="bar"></i></div>
+  <div class="legend" id="prog">0/6 chương</div>
+  <div class="sub" style="margin-top:16px">
+    <a href="driver.html">← Hướng dẫn đọc dự án</a><br>
+    <a href="kien-thuc.html">📒 Sổ kiến thức</a><br>
+    <a href="tracker.html">🐞 Sổ theo dõi vấn đề</a>
+  </div>
+</nav>
+
+<main>
+<header class="hero">
+  <h2>Sáu kiến thức trọng tâm, học trên chính dự án của bạn</h2>
+  <p>Mỗi chương có bốn phần: <b>khái niệm</b> ngắn gọn, <b>code thật</b> trong <code>realworld-api</code> (có link tới file), <b>bẫy</b> đã gặp khi làm, và <b>bài tập</b> để tự làm.</p>
+  <p>Thứ dự án <b>chưa có</b> được đánh dấu <span style="color:var(--gap);font-weight:600">tím</span>: <code>@Patch()</code> (spec dùng PUT), là bài tập ở chương 3. Middleware và Exception Filter <b>đã có thật</b> từ 2026-11-12 (chương 6).</p>
+</header>
+
+<!-- ============================================================ 1 -->
+<section class="ch" id="c1" data-ch="1">
+<h2><span class="n">01</span>Kiến trúc Modular</h2>
+<p class="lead">Ứng dụng NestJS là một <b>cây module</b>. Mỗi module gom một nghiệp vụ: controller (nhận HTTP), service (xử lý), entity (bảng DB), DTO (kiểm dữ liệu vào). Module chỉ cho bên ngoài dùng những gì nó <code>exports</code>.</p>
+
+<h3>Cây module của dự án</h3>
+<pre><code>AppModule                         <span class="c">src/app.module.ts — gốc</span>
+├─ ConfigModule (global)          <span class="c">đọc .env</span>
+├─ TypeOrmModule.forRootAsync     <span class="c">kết nối Postgres (1 lần)</span>
+├─ I18nModule                     <span class="c">đa ngôn ngữ en / vi</span>
+├─ UsersModule                    <span class="c">/api/users, /api/user</span>
+│   └─ imports AuthModule         <span class="c">để ký token khi login</span>
+├─ ArticlesModule                 <span class="c">/api/articles</span>
+│   └─ imports AuthModule         <span class="c">để guard kiểm token</span>
+└─ TagsModule                     <span class="c">/api/tags</span>
+AuthModule                        <span class="c">không có controller; chỉ cấu hình + exports JwtModule</span></code></pre>
+
+<h3>Mỗi thư mục là một nghiệp vụ</h3>
+<table>
+<tr><th>File trong <code>src/articles/</code></th><th>Vai trò</th><th>Được phép làm gì</th></tr>
+<tr><td><a href="../src/articles/articles.module.ts">articles.module.ts</a></td><td>Khai báo module</td><td>Nối các mảnh lại với nhau</td></tr>
+<tr><td><a href="../src/articles/articles.controller.ts">articles.controller.ts</a></td><td>Tầng HTTP</td><td>Đọc param/body, gọi service. <b>Không</b> chứa nghiệp vụ</td></tr>
+<tr><td><a href="../src/articles/articles.service.ts">articles.service.ts</a></td><td>Nghiệp vụ</td><td>Kiểm chủ bài, sinh slug, truy vấn DB</td></tr>
+<tr><td><a href="../src/articles/article.entity.ts">article.entity.ts</a></td><td>Bảng <code>articles</code></td><td>Mô tả cột và quan hệ</td></tr>
+<tr><td><a href="../src/articles/dto/">dto/</a></td><td>Hình dạng dữ liệu vào</td><td>Luật kiểm (class-validator)</td></tr>
+<tr><td><a href="../src/articles/article.mapper.ts">article.mapper.ts</a></td><td>Hình dạng dữ liệu ra</td><td>Entity → JSON đúng spec (không lộ id, password)</td></tr>
+</table>
+
+<div class="box ok"><b class="t">Vì sao tách như vậy?</b>
+<p>Controller mỏng thì đổi giao thức (REST → GraphQL) không đụng tới nghiệp vụ. Service không biết HTTP nên dễ test. Mapper đứng giữa entity và response nên thêm cột vào DB không vô tình lộ ra API.</p></div>
+
+<div class="box warn"><b class="t">Bẫy đã gặp</b>
+<p>Reviewer độc lập chỉ ra service đang trả về <code>{ article }</code>, tức là đã biết hình dạng response HTTP. Cách chuẩn hơn: service trả <code>ArticleView</code>, controller tự bọc <code>{ article: ... }</code>.</p></div>
+
+<details class="task"><summary>Bài tập 1.1: Vẽ lại cây module</summary>
+<p>Mở <a href="../src/app.module.ts">app.module.ts</a> rồi lần theo từng <code>imports</code>. Tự trả lời: vì sao <code>ArticlesModule</code> phải import <code>AuthModule</code>? Thử xoá dòng import đó, chạy <code>npm run start:dev</code> và đọc lỗi Nest báo.</p>
+<p class="c">Đáp án: <code>JwtAuthGuard</code> cần <code>JwtService</code>. <code>JwtService</code> nằm trong <code>JwtModule</code>, và <code>AuthModule</code> export nó. Bỏ import thì Nest báo "Nest can't resolve dependencies of the JwtAuthGuard (?)".</p>
+</details>
+<p class="legend">📘 Bài học: <a href="../../learning/lessons/01-overview/04-modules/README.md">01-overview/04-modules</a> · <a href="../../learning/lessons/02-fundamentals/03-dynamic-modules/README.md">02-fundamentals/03-dynamic-modules</a></p>
+<button class="done-btn" data-done="1">Đánh dấu đã hiểu</button>
+</section>
+
+<!-- ============================================================ 2 -->
+<section class="ch" id="c2" data-ch="2">
+<h2><span class="n">02</span>@Module() decorator</h2>
+<p class="lead"><code>@Module()</code> nhận một object có 4 khoá. Nest đọc chúng lúc khởi động để dựng <b>DI container</b>, tức là tự tạo và tiêm các instance cho bạn.</p>
+
+<table>
+<tr><th>Khoá</th><th>Ý nghĩa</th><th>Ví dụ trong dự án</th></tr>
+<tr><td><code>imports</code></td><td>Module khác mà module này cần dùng</td><td><code>TypeOrmModule.forFeature([Article, Tag])</code>, <code>AuthModule</code></td></tr>
+<tr><td><code>controllers</code></td><td>Class nhận request HTTP</td><td><code>ArticlesController</code></td></tr>
+<tr><td><code>providers</code></td><td>Class Nest tạo ra và tiêm vào nơi khác</td><td><code>ArticlesService</code></td></tr>
+<tr><td><code>exports</code></td><td>Provider cho module khác dùng</td><td><code>AuthModule</code> exports <code>JwtModule</code></td></tr>
+</table>
+
+<p class="file"><a href="../src/articles/articles.module.ts">src/articles/articles.module.ts</a></p>
+<pre><code><span class="k">@Module</span>({
+  imports: [TypeOrmModule.forFeature([Article, Tag]), AuthModule],
+  controllers: [ArticlesController],
+  providers: [ArticlesService],
+})
+<span class="k">export class</span> ArticlesModule {}</code></pre>
+
+<h3>Dependency Injection: Nest tự "new" giúp bạn</h3>
+<p class="file"><a href="../src/articles/articles.controller.ts">src/articles/articles.controller.ts</a></p>
+<pre><code><span class="k">export class</span> ArticlesController {
+  <span class="c">// Không có `new ArticlesService(...)` ở đâu cả.</span>
+  <span class="c">// Nest thấy kiểu tham số, tìm trong providers, tạo MỘT instance rồi tiêm vào.</span>
+  constructor(<span class="k">private readonly</span> articlesService: ArticlesService) {}
+}</code></pre>
+
+<h3>Module động: <code>forRoot</code> / <code>forFeature</code> / <code>registerAsync</code></h3>
+<p>Một số module cần cấu hình. Quy ước đặt tên:</p>
+<table>
+<tr><th>Hàm</th><th>Gọi ở đâu</th><th>Trong dự án</th></tr>
+<tr><td><code>forRoot / forRootAsync</code></td><td>Một lần, ở AppModule</td><td>Kết nối DB, đọc .env, i18n</td></tr>
+<tr><td><code>forFeature</code></td><td>Ở từng module nghiệp vụ</td><td>Đăng ký repository cho entity của module đó</td></tr>
+<tr><td><code>registerAsync</code></td><td>Module tự cấu hình, cần đọc config</td><td><code>JwtModule</code> đọc <code>JWT_SECRET</code></td></tr>
+</table>
+<p class="file"><a href="../src/auth/auth.module.ts">src/auth/auth.module.ts</a></p>
+<pre><code><span class="k">@Module</span>({
+  imports: [
+    JwtModule.registerAsync({
+      inject: [ConfigService],                     <span class="c">// xin ConfigService từ DI</span>
+      useFactory: (config: ConfigService) =&gt; ({
+        secret: config.getOrThrow&lt;string&gt;(<span class="k">'JWT_SECRET'</span>), <span class="c">// thiếu → app không chạy</span>
+        signOptions: { expiresIn: parseExpiresIn(config.get(<span class="k">'JWT_EXPIRES_IN'</span>, <span class="k">'7d'</span>)) },
+      }),
+    }),
+  ],
+  exports: [JwtModule],                            <span class="c">// cho Users, Articles dùng JwtService</span>
+})
+<span class="k">export class</span> AuthModule {}</code></pre>
+
+<div class="box warn"><b class="t">Bẫy đã gặp</b>
+<p><code>JWT_EXPIRES_IN=3600</code> trong .env là <b>chuỗi</b>. Thư viện jsonwebtoken hiểu chuỗi toàn chữ số là <b>mili giây</b>, nên token chết sau 3,6 giây. Hàm <code>parseExpiresIn</code> đổi chuỗi đó sang số để được tính là giây.</p></div>
+
+<details class="task"><summary>Bài tập 2.1: Provider dùng chung</summary>
+<p><code>ArticlesService</code> và <code>UsersService</code> đều tự viết hàm tìm user theo id. Hãy cho <code>UsersModule</code> <code>exports: [UsersService]</code>, rồi trong <code>ArticlesModule</code> import <code>UsersModule</code> để dùng lại. Câu hỏi: nếu <code>UsersModule</code> cũng import <code>ArticlesModule</code> thì sao? (gợi ý: <code>forwardRef</code>, bài 02-fundamentals/05-circular-dependency)</p>
+</details>
+<p class="legend">📘 Bài học: <a href="../../learning/lessons/01-overview/03-providers/README.md">01-overview/03-providers</a> · <a href="../../learning/lessons/02-fundamentals/02-async-providers/README.md">02-fundamentals/02-async-providers</a> · <a href="../../learning/lessons/02-fundamentals/05-circular-dependency/README.md">05-circular-dependency</a></p>
+<button class="done-btn" data-done="2">Đánh dấu đã hiểu</button>
+</section>
+
+<!-- ============================================================ 3 -->
+<section class="ch" id="c3" data-ch="3">
+<h2><span class="n">03</span>Routes, Controllers và API endpoints</h2>
+<p class="lead">URL đầy đủ được ghép từ 3 phần: <b>prefix toàn cục</b> + <b>đường dẫn của <code>@Controller()</code></b> + <b>đường dẫn của decorator method</b>.</p>
+
+<pre><code>app.setGlobalPrefix(<span class="k">'api'</span>)    +   <span class="k">@Controller</span>(<span class="k">'articles'</span>)   +   <span class="k">@Get</span>(<span class="k">':slug'</span>)
+        /api                     /articles                   /how-to-x
+                         → GET /api/articles/how-to-x</code></pre>
+
+<h3>Tất cả endpoint đã làm</h3>
+<table>
+<tr><th>Decorator</th><th>URL</th><th>Mã</th><th>File</th></tr>
+<tr><td><code>@Post()</code></td><td>POST /api/users</td><td>201</td><td rowspan="2"><a href="../src/users/users.controller.ts">users.controller.ts</a></td></tr>
+<tr><td><code>@Post('login')</code> + <code>@HttpCode(200)</code></td><td>POST /api/users/login</td><td>200</td></tr>
+<tr><td><code>@Get()</code></td><td>GET /api/user</td><td>200</td><td rowspan="2"><a href="../src/users/user.controller.ts">user.controller.ts</a></td></tr>
+<tr><td><code>@Put()</code></td><td>PUT /api/user</td><td>200</td></tr>
+<tr><td><code>@Post()</code></td><td>POST /api/articles</td><td>201</td><td rowspan="5"><a href="../src/articles/articles.controller.ts">articles.controller.ts</a></td></tr>
+<tr><td><code>@Get()</code> + <code>@Query()</code></td><td>GET /api/articles?tag=&amp;limit=</td><td>200</td></tr>
+<tr><td><code>@Get(':slug')</code></td><td>GET /api/articles/:slug</td><td>200</td></tr>
+<tr><td><code>@Put(':slug')</code></td><td>PUT /api/articles/:slug</td><td>200</td></tr>
+<tr><td><code>@Delete(':slug')</code> + <code>@HttpCode(204)</code></td><td>DELETE /api/articles/:slug</td><td>204</td></tr>
+</table>
+
+<h3>Lấy dữ liệu từ request</h3>
+<p class="file"><a href="../src/articles/articles.controller.ts">src/articles/articles.controller.ts</a></p>
+<pre><code><span class="k">@Put</span>(<span class="k">':slug'</span>)
+<span class="k">@UseGuards</span>(JwtAuthGuard)
+update(
+  <span class="k">@Param</span>(<span class="k">'slug'</span>) slug: string,              <span class="c">// từ URL: /articles/:slug</span>
+  <span class="k">@CurrentAuth</span>() auth: AuthContext,         <span class="c">// decorator tự viết: user đã đăng nhập</span>
+  <span class="k">@Body</span>() body: UpdateArticleRequestDto,    <span class="c">// JSON body, đã qua ValidationPipe</span>
+): ArticleResponse {
+  <span class="k">return this</span>.articlesService.update(slug, auth.userId, body.article);
+}
+
+<span class="k">@Get</span>()
+list(<span class="k">@Query</span>() query: ListArticlesQueryDto) {...}   <span class="c">// ?tag=&amp;limit= → object có kiểu</span></code></pre>
+
+<h3>Mã trạng thái mặc định và cách đổi</h3>
+<table>
+<tr><th>Method</th><th>Nest mặc định</th><th>Spec cần</th><th>Cách làm</th></tr>
+<tr><td>POST</td><td>201</td><td>login cần 200</td><td><code>@HttpCode(HttpStatus.OK)</code></td></tr>
+<tr><td>DELETE</td><td>200</td><td>204, không body</td><td><code>@HttpCode(HttpStatus.NO_CONTENT)</code></td></tr>
+<tr><td>Còn lại</td><td>200</td><td>200</td><td>—</td></tr>
+</table>
+
+<div class="box gap"><b class="t">Dự án chưa dùng @Patch(), và vì sao</b>
+<p>Spec RealWorld quy định <code>PUT /api/user</code> và <code>PUT /api/articles/:slug</code>, nên dự án dùng <code>@Put()</code>. Nhưng hành vi thật ở đây lại là <b>sửa một phần</b>: field nào không gửi thì giữ nguyên. Đó chính là ngữ nghĩa của PATCH.</p>
+<table>
+<tr><th></th><th>PUT (chuẩn REST)</th><th>PATCH</th></tr>
+<tr><td>Ý nghĩa</td><td>Thay <b>toàn bộ</b> tài nguyên</td><td>Sửa <b>một phần</b></td></tr>
+<tr><td>Thiếu field</td><td>Field đó bị xoá hoặc đặt lại mặc định</td><td>Giữ nguyên</td></tr>
+<tr><td>DTO thường dùng</td><td>Mọi field bắt buộc</td><td><code>PartialType(CreateDto)</code>: mọi field tuỳ chọn</td></tr>
+</table></div>
+
+<div class="box warn"><b class="t">Bẫy đã gặp</b>
+<p><b>Thứ tự route.</b> Khi làm feed sau này, <code>@Get('feed')</code> phải khai báo <b>trước</b> <code>@Get(':slug')</code>. Nếu không, <code>/articles/feed</code> sẽ khớp route <code>:slug</code> với slug = "feed" và trả 404. Bộ test Hurl đã bắt đúng lỗi này (<code>errors_articles.hurl:37</code>).</p></div>
+
+<details class="task"><summary>Bài tập 3.1: Thêm một endpoint @Patch()</summary>
+<p>Thêm <code>PATCH /api/articles/:slug</code> làm bí danh cho PUT (chỉ để luyện; spec không yêu cầu):</p>
+<pre><code><span class="k">@Patch</span>(<span class="k">':slug'</span>)
+<span class="k">@UseGuards</span>(JwtAuthGuard)
+patch(<span class="k">@Param</span>(<span class="k">'slug'</span>) slug: string, <span class="k">@CurrentAuth</span>() auth: AuthContext,
+      <span class="k">@Body</span>() body: UpdateArticleRequestDto) {
+  <span class="k">return this</span>.articlesService.update(slug, auth.userId, body.article);
+}</code></pre>
+<p>Thử bằng REST Client trong <a href="../requests/articles.http">requests/articles.http</a>. Sau đó tìm hiểu <code>PartialType</code> từ <code>@nestjs/mapped-types</code>: nó có thay được <code>UpdateArticleDto</code> không? (gợi ý: không hẳn. <code>PartialType</code> dùng <code>@IsOptional</code>, mà <code>@IsOptional</code> cho qua cả <code>null</code>. Xem ghi chú V2 trong sổ kiến thức.)</p>
+</details>
+<p class="legend">📘 Bài học: <a href="../../learning/lessons/01-overview/02-controllers/README.md">01-overview/02-controllers</a> · <a href="../../learning/lessons/01-overview/10-custom-decorators/README.md">10-custom-decorators</a></p>
+<button class="done-btn" data-done="3">Đánh dấu đã hiểu</button>
+</section>
+
+<!-- ============================================================ 4 -->
+<section class="ch" id="c4" data-ch="4">
+<h2><span class="n">04</span>Kết nối database với TypeORM + PostgreSQL</h2>
+<p class="lead">Ba lớp: <b>DataSource</b> (kết nối) → <b>Entity</b> (class ↔ bảng) → <b>Repository</b> (đọc/ghi). Cấu trúc bảng chỉ được thay đổi bằng <b>migration</b>.</p>
+
+<h3>Bước 1: Một cấu hình dùng cho hai nơi</h3>
+<p class="file"><a href="../src/database/typeorm.options.ts">src/database/typeorm.options.ts</a></p>
+<pre><code><span class="k">export function</span> typeOrmOptions(env: NodeJS.ProcessEnv): DataSourceOptions {
+  <span class="k">return</span> {
+    type: <span class="k">'postgres'</span>,
+    host: env.DB_HOST ?? <span class="k">'localhost'</span>,
+    username: env.DB_USERNAME, password: env.DB_PASSWORD, database: env.DB_DATABASE,
+    entities: [User, Article, Comment, Tag],
+    migrations: [join(import.meta.dirname, <span class="k">'migrations'</span>, <span class="k">'*.js'</span>)],
+    synchronize: <span class="k">false</span>,   <span class="c">// KHÔNG để TypeORM tự sửa bảng</span>
+  };
+}</code></pre>
+<p>Hai nơi dùng chung cấu hình này: app Nest (<code>TypeOrmModule.forRootAsync</code> trong <a href="../src/app.module.ts">app.module.ts</a>) và TypeORM CLI (<a href="../src/database/data-source.ts">data-source.ts</a>). Nhờ vậy hai bên không bao giờ trỏ vào hai DB khác nhau.</p>
+
+<h3>Bước 2: Entity và quan hệ</h3>
+<p class="file"><a href="../src/articles/article.entity.ts">src/articles/article.entity.ts</a> (rút gọn)</p>
+<pre><code><span class="k">@Entity</span>(<span class="k">'articles'</span>)
+<span class="k">@Index</span>(<span class="k">'IDX_articles_author_id'</span>, [<span class="k">'author'</span>])    <span class="c">// Postgres không tự index khoá ngoại</span>
+<span class="k">export class</span> Article <span class="k">extends</span> BaseEntity {      <span class="c">// id, created_at, updated_at</span>
+  <span class="k">@Column</span>({ unique: <span class="k">true</span> }) slug: string;
+  <span class="k">@Column</span>({ type: <span class="k">'text'</span> }) body: string;
+
+  <span class="k">@ManyToOne</span>(() =&gt; User, (u) =&gt; u.articles, { nullable: <span class="k">false</span>, onDelete: <span class="k">'CASCADE'</span> })
+  <span class="k">@JoinColumn</span>({ name: <span class="k">'author_id'</span> })               <span class="c">// cột DB snake_case</span>
+  author: Relation&lt;User&gt;;                           <span class="c">// Relation&lt;&gt; vì User cũng import Article</span>
+
+  <span class="k">@ManyToMany</span>(() =&gt; Tag, (t) =&gt; t.articles)
+  <span class="k">@JoinTable</span>({ name: <span class="k">'article_tags'</span>, joinColumn: { name: <span class="k">'article_id'</span> },
+               inverseJoinColumn: { name: <span class="k">'tag_id'</span> } })
+  tags: Relation&lt;Tag&gt;[];
+}</code></pre>
+<table>
+<tr><th>Quan hệ</th><th>Ví dụ</th><th>DB thật</th></tr>
+<tr><td><code>@ManyToOne</code> / <code>@OneToMany</code></td><td>Nhiều bài → một tác giả</td><td>Cột <code>articles.author_id</code></td></tr>
+<tr><td><code>@ManyToMany</code> + <code>@JoinTable</code></td><td>Bài ↔ tag, user ↔ bài yêu thích</td><td>Bảng nối <code>article_tags</code>, <code>favorites</code></td></tr>
+</table>
+
+<h3>Bước 3: Repository trong service</h3>
+<pre><code><span class="c">// articles.module.ts: TypeOrmModule.forFeature([Article, Tag]) đăng ký repository</span>
+constructor(
+  <span class="k">@InjectRepository</span>(Article) <span class="k">private readonly</span> articles: Repository&lt;Article&gt;,
+  <span class="k">@InjectRepository</span>(Tag) <span class="k">private readonly</span> tags: Repository&lt;Tag&gt;,
+) {}
+
+<span class="c">// Đơn giản → API của repository</span>
+<span class="k">await this</span>.articles.delete({ id: article.id });
+<span class="k">await this</span>.tags.upsert(names.map((name) =&gt; ({ name })), { conflictPaths: [<span class="k">'name'</span>] });
+
+<span class="c">// Phức tạp → QueryBuilder (luôn dùng tham số :email, không nối chuỗi → chống SQL injection)</span>
+<span class="k">this</span>.users.createQueryBuilder(<span class="k">'user'</span>)
+  .addSelect(<span class="k">'user.password'</span>)            <span class="c">// cột có select: false</span>
+  .where(<span class="k">'user.email = :email'</span>, { email })
+  .getOne();</code></pre>
+
+<h3>Bước 4: Migration, quy trình bắt buộc</h3>
+<pre><code>npm run db:up                                       <span class="c"># bật Postgres (Docker)</span>
+<span class="c"># 1. sửa entity</span>
+npm run migration:generate -- src/database/migrations/AddArticleIndexes
+<span class="c"># 2. ĐỌC file sinh ra (TypeORM có thể sinh DROP COLUMN ngoài ý muốn)</span>
+npm run migration:run
+npm run migration:revert   <span class="c"># 3. thử down() có chạy được không</span>
+npm run migration:run      <span class="c"># 4. chạy lại</span></code></pre>
+<p class="file"><a href="../src/database/migrations/1794279971783-AddArticleIndexes.ts">src/database/migrations/1794279971783-AddArticleIndexes.ts</a></p>
+<pre><code><span class="k">public async</span> up(q: QueryRunner) {
+  <span class="k">await</span> q.query(<span class="k">`CREATE INDEX "IDX_articles_author_id" ON "articles" ("author_id")`</span>);
+}
+<span class="k">public async</span> down(q: QueryRunner) {                 <span class="c">// luôn viết được đường lùi</span>
+  <span class="k">await</span> q.query(<span class="k">`DROP INDEX "public"."IDX_articles_author_id"`</span>);
+}</code></pre>
+
+<div class="box warn"><b class="t">Bẫy đã gặp</b>
+<p>• <b>N+1:</b> nếu tính <code>favorited</code> từng bài một, 20 bài sẽ thành 20 câu SQL. Dự án dùng 3 câu <code>IN (...)</code> gộp, nên luôn là <b>6 câu</b> dù trang dài bao nhiêu (đã đo với <code>DB_LOGGING=true</code>).</p>
+<p>• <code>@UpdateDateColumn</code> <b>không tự cập nhật</b> khi chỉ đổi tag, vì TypeORM chỉ ghi vào bảng nối, không UPDATE bảng articles. Phải tự đặt <code>updatedAt = new Date()</code>.</p>
+<p>• <b>Thiếu transaction</b> (review tìm ra, đã sửa ở PR art-4): tag được tạo trước, sau đó lưu bài bị lỗi, thì tag bị mồ côi. Thêm nữa, PUT và DELETE gọi cùng lúc làm bài đã xoá "sống lại", vì <code>save()</code> không thấy dòng nên INSERT lại.</p></div>
+
+<details class="task"><summary>Bài tập 4.1: Transaction (đã làm ở art-4, hãy đọc và giải thích lại)</summary>
+<p>Code thật: <code>create</code>, <code>update</code>, <code>lockBySlugOrThrow</code> trong <a href="../src/articles/articles.service.ts">articles.service.ts</a>. Test: ART4-01, ART4-07 trong <a href="../test/art-hardening.e2e-spec.ts">art-hardening.e2e-spec.ts</a>. Ý chính:</p>
+<pre><code><span class="k">constructor</span>(<span class="k">private readonly</span> dataSource: DataSource, ...) {}
+
+<span class="k">return this</span>.dataSource.transaction(<span class="k">async</span> (m) =&gt; {
+  <span class="k">const</span> tags = <span class="k">await</span> resolveTags(m.getRepository(Tag), names);
+  <span class="k">return</span> m.getRepository(Article).save({ ...data, tags });
+});   <span class="c">// lỗi ở bất kỳ dòng nào → ROLLBACK cả hai</span></code></pre>
+<p>Tự trả lời: (1) vì sao khi slug trùng phải chạy lại <b>cả</b> transaction chứ không chỉ câu INSERT? (gợi ý: Postgres huỷ transaction sau câu lỗi.) (2) vì sao câu khoá <code>FOR UPDATE</code> phải tách riêng, không dùng chung với <code>relations</code>? (gợi ý: LEFT JOIN.)</p>
+</details>
+<p class="legend">📘 Bài học: <a href="../../learning/lessons/04-data/02-typeorm/README.md">04-data/02-typeorm</a> · <a href="../../learning/lessons/04-data/01-overview/README.md">04-data/01-overview</a></p>
+<button class="done-btn" data-done="4">Đánh dấu đã hiểu</button>
+</section>
+
+<!-- ============================================================ 5 -->
+<section class="ch" id="c5" data-ch="5">
+<h2><span class="n">05</span>Authentication với JWT</h2>
+<p class="lead">JWT là một chuỗi gồm <code>header.payload.chữ_ký</code>. Server ký bằng <code>JWT_SECRET</code>. Khi token quay lại, server chỉ cần kiểm chữ ký, <b>không cần lưu phiên</b> trong DB.</p>
+
+<h3>Toàn bộ luồng</h3>
+<pre><code><span class="c">1. Đăng ký / đăng nhập</span>
+POST /api/users/login  {"user":{"email","password"}}
+  → bcrypt.compare(password, hash)        <span class="c">// không bao giờ lưu mật khẩu thô</span>
+  → jwt.signAsync({ sub: user.id })       <span class="c">// payload CHỈ có id</span>
+  ← {"user": {..., "token": "eyJhbGci..."}}
+
+<span class="c">2. Gọi API cần đăng nhập</span>
+PUT /api/user   Authorization: Token eyJhbGci...   <span class="c">// spec dùng "Token", không phải "Bearer"</span>
+  → JwtAuthGuard: tách token → jwt.verifyAsync → request.auth = { userId }
+  → @CurrentAuth() lấy request.auth ra cho controller</code></pre>
+
+<h3>Đăng nhập: chống dò email</h3>
+<p class="file"><a href="../src/users/users.service.ts">src/users/users.service.ts</a></p>
+<pre><code><span class="k">const</span> user = <span class="k">await this</span>.users.createQueryBuilder(<span class="k">'user'</span>)...getOne();
+
+<span class="c">// Không có user vẫn so với một hash GIẢ → thời gian phản hồi như nhau,</span>
+<span class="c">// kẻ tấn công không đo được "email này có tồn tại".</span>
+<span class="k">const</span> ok = <span class="k">await</span> compare(dto.password, user?.password ?? DUMMY_HASH);
+<span class="k">if</span> (!user || !ok) {
+  <span class="k">throw</span> errorsException(<span class="k">401</span>, <span class="k">'credentials'</span>, <span class="k">'errors.invalid'</span>); <span class="c">// cùng 1 câu cho cả 2 trường hợp</span>
+}</code></pre>
+
+<h3>Guard: người gác cổng</h3>
+<p class="file"><a href="../src/auth/jwt-auth.guard.ts">src/auth/jwt-auth.guard.ts</a></p>
+<pre><code><span class="k">@Injectable</span>()
+<span class="k">export class</span> JwtAuthGuard <span class="k">implements</span> CanActivate {
+  <span class="k">protected readonly</span> optional: boolean = <span class="k">false</span>;
+  constructor(
+    <span class="k">private readonly</span> jwt: JwtService,
+    <span class="k">@InjectRepository</span>(User) <span class="k">private readonly</span> users: Repository&lt;User&gt;, <span class="c">// AuthModule export</span>
+  ) {}
+
+  <span class="k">async</span> canActivate(context: ExecutionContext): Promise&lt;boolean&gt; {
+    <span class="k">const</span> request = context.switchToHttp().getRequest();
+    <span class="k">const</span> token = extractToken(request);    <span class="c">// undefined: không có header · null: sai dạng</span>
+    <span class="k">if</span> (token === <span class="k">undefined</span>) {
+      <span class="k">if</span> (<span class="k">this</span>.optional) <span class="k">return true</span>;           <span class="c">// khách được xem</span>
+      <span class="k">throw</span> errorsException(<span class="k">401</span>, <span class="k">'token'</span>, <span class="k">'errors.tokenMissing'</span>);
+    }
+    <span class="k">if</span> (token === <span class="k">null</span>) <span class="k">throw</span> invalidToken();   <span class="c">// "Bearer x" → 401, không coi là khách</span>
+    <span class="k">const</span> userId = <span class="k">await this</span>.verify(token);    <span class="c">// sai chữ ký / hết hạn → undefined</span>
+    <span class="c">// token đúng chữ ký nhưng user đã bị xoá → cũng 401</span>
+    <span class="k">if</span> (userId === <span class="k">undefined</span> || !(<span class="k">await this</span>.users.existsBy({ id: userId }))) {
+      <span class="k">throw</span> invalidToken();
+    }
+    request.auth = { userId, token };
+    <span class="k">return true</span>;
+  }
+}
+
+<span class="c">// Endpoint công khai nhưng "biết" người xem (favorited, following):</span>
+<span class="k">export class</span> OptionalJwtAuthGuard <span class="k">extends</span> JwtAuthGuard {
+  <span class="k">protected override readonly</span> optional = <span class="k">true</span>;
+}</code></pre>
+
+<h3>Custom decorator lấy user</h3>
+<p class="file"><a href="../src/auth/current-auth.decorator.ts">src/auth/current-auth.decorator.ts</a></p>
+<pre><code><span class="k">export const</span> CurrentAuth = createParamDecorator(
+  (_data: unknown, ctx: ExecutionContext) =&gt; ctx.switchToHttp().getRequest().auth,
+);</code></pre>
+
+<table>
+<tr><th>Tình huống</th><th><code>JwtAuthGuard</code></th><th><code>OptionalJwtAuthGuard</code></th></tr>
+<tr><td>Không có header</td><td>401 <code>token: is missing</code></td><td>Cho qua, <code>auth</code> = undefined</td></tr>
+<tr><td>Header sai dạng (<code>Bearer x</code>)</td><td>401 <code>token: is invalid</code></td><td>401 <code>token: is invalid</code></td></tr>
+<tr><td>Token đúng chữ ký nhưng user đã bị xoá</td><td>401 <code>token: is invalid</code></td><td>401 <code>token: is invalid</code></td></tr>
+<tr><td>Token sai chữ ký / hết hạn</td><td>401 <code>token: is invalid</code></td><td>401 <code>token: is invalid</code></td></tr>
+<tr><td>Token đúng</td><td>Cho qua</td><td>Cho qua, có <code>auth.userId</code></td></tr>
+</table>
+
+<div class="box warn"><b class="t">Bẫy đã gặp</b>
+<p>• (Đã sửa ở art-4) Bản cũ của guard chỉ kiểm chữ ký, <b>không kiểm user còn tồn tại</b>. User bị xoá nhưng token vẫn hợp lệ, nên <code>POST /articles</code> trả 500.</p>
+<p>• (Đã sửa ở art-4) Header <code>Bearer abc</code> gửi tới endpoint tuỳ chọn từng bị coi là khách (200), trái luật "token hỏng vẫn 401".</p>
+<p>• JWT không thu hồi được: đổi mật khẩu thì token cũ vẫn sống tới khi hết hạn (7 ngày). Đã thử thêm cột <code>tokenVersion</code> và kiểm trong guard, nhưng <b>bộ test chính thức đòi token cũ vẫn dùng được</b> sau khi đổi mật khẩu (<code>errors_auth.hurl:240–261</code>), nên đã gỡ ra. Bài học: spec là chuẩn cao nhất, kể cả khi mình thấy bảo mật hơn. Xem ISS-03 trong <a href="tracker.html">sổ theo dõi</a>.</p></div>
+
+<details class="task"><summary>Bài tập 5.1: Guard kiểm user tồn tại (đã làm ở art-4, hãy giải thích lại)</summary>
+<p>Đọc <a href="../src/auth/auth.module.ts">auth.module.ts</a>: vì sao phải thêm <code>TypeOrmModule.forFeature([User])</code> vào <code>imports</code> <b>và</b> <code>TypeOrmModule</code> vào <code>exports</code>? (gợi ý: guard được tạo trong ngữ cảnh của module <b>dùng</b> nó, như ArticlesModule, chứ không phải AuthModule.) Đổi lại, mỗi request có token tốn thêm một câu SQL theo khoá chính. Có đáng không?</p>
+</details>
+<p class="legend">📘 Bài học: <a href="../../learning/lessons/05-security/01-authentication/README.md">05-security/01-authentication</a> · <a href="../../learning/lessons/01-overview/08-guards/README.md">01-overview/08-guards</a> · <a href="../../learning/lessons/05-security/03-encryption-and-hashing/README.md">03-encryption-and-hashing</a></p>
+<button class="done-btn" data-done="5">Đánh dấu đã hiểu</button>
+</section>
+
+<!-- ============================================================ 6 -->
+<section class="ch" id="c6" data-ch="6">
+<h2><span class="n">06</span>Exception handling và middleware: Pipes, Filters</h2>
+<p class="lead">Mỗi request đi qua một <b>dây chuyền cố định</b>. Biết request đang ở khâu nào thì sẽ biết nên đặt code ở đâu.</p>
+
+<div class="flow">
+  <span class="have">Middleware</span><em>→</em>
+  <span class="have">Guard</span><em>→</em>
+  <span>Interceptor (trước)</span><em>→</em>
+  <span class="have">Pipe</span><em>→</em>
+  <span class="have">Controller → Service</span><em>→</em>
+  <span>Interceptor (sau)</span><em>→</em>
+  <span class="have">Exception Filter</span>
+</div>
+<p class="legend"><b style="color:var(--ok)">Xanh</b> = dự án đã có · <b style="color:var(--gap)">Tím nét đứt</b> = chưa có, làm ở bài tập · Trắng = chưa cần</p>
+
+<table>
+<tr><th>Khâu</th><th>Biết route nào sẽ chạy?</th><th>Dùng để</th><th>Trong dự án</th></tr>
+<tr><td>Middleware</td><td>Không</td><td>Log, gắn request-id, CORS, helmet, header chung</td><td><code>NoStoreMiddleware</code> (Cache-Control)</td></tr>
+<tr><td>Guard</td><td>Có (<code>ExecutionContext</code>)</td><td>Cho qua / chặn (auth, quyền)</td><td><code>JwtAuthGuard</code></td></tr>
+<tr><td>Pipe</td><td>Có</td><td>Kiểm + biến đổi tham số</td><td><code>I18nValidationPipe</code> toàn cục</td></tr>
+<tr><td>Exception Filter</td><td>Có</td><td>Đổi exception thành response</td><td><code>AllExceptionsFilter</code> toàn cục</td></tr>
+</table>
+
+<h3>Pipe: kiểm dữ liệu vào</h3>
+<p class="file"><a href="../src/app.setup.ts">src/app.setup.ts</a></p>
+<pre><code>app.useGlobalPipes(
+  <span class="k">new</span> I18nValidationPipe({
+    whitelist: <span class="k">true</span>,    <span class="c">// bỏ field lạ: gửi "slug" hay "author" trong body cũng bị lờ đi</span>
+    transform: <span class="k">true</span>,    <span class="c">// JSON → instance DTO; "?limit=5" (chuỗi) → 5 (số)</span>
+    exceptionFactory: validationExceptionFactory,   <span class="c">// lỗi → 422 {"errors":{...}}</span>
+  }),
+);</code></pre>
+<p>Luật kiểm nằm trên DTO, dưới dạng decorator:</p>
+<p class="file"><a href="../src/articles/dto/create-article.dto.ts">src/articles/dto/create-article.dto.ts</a></p>
+<pre><code><span class="k">export class</span> CreateArticleDto {
+  <span class="k">@Trim</span>()          <span class="c">// "   " → "" để @IsNotEmpty bắt được (decorator tự viết)</span>
+  <span class="k">@IsNotEmpty</span>()    <span class="c">// → "can't be blank" (câu lấy từ i18n)</span>
+  <span class="k">@IsString</span>()
+  <span class="k">@MaxLength</span>(255)
+  <span class="k">@NoNulChar</span>()     <span class="c">// ký tự \u0000 làm Postgres lỗi 500 (decorator tự viết)</span>
+  title: string;
+}
+<span class="k">export class</span> CreateArticleRequestDto {
+  <span class="k">@Wrapped</span>(() =&gt; CreateArticleDto)   <span class="c">// {"article": {...}}: IsDefined+IsObject+ValidateNested+Type</span>
+  article: CreateArticleDto;
+}</code></pre>
+<p>Nest còn có pipe dựng sẵn cho tham số đơn lẻ, ví dụ <code>@Param('id', ParseIntPipe) id: number</code>: <code>"abc"</code> sẽ thành lỗi 400.</p>
+
+<h3>Exception: ném lỗi đúng định dạng spec</h3>
+<p class="file"><a href="../src/common/http-errors.ts">src/common/http-errors.ts</a></p>
+<pre><code><span class="k">export function</span> errorsException(status: HttpStatus, field: string, key: string) {
+  <span class="k">return new</span> HttpException({ errors: { [field]: [t(key)] } }, status);
+}
+<span class="c">// Dùng: throw errorsException(HttpStatus.FORBIDDEN, 'article', 'errors.forbidden');</span>
+<span class="c">// → 403 {"errors":{"article":["forbidden"]}}   (?lang=vi → "không có quyền")</span>
+
+<span class="c">// Đổi lỗi DB sang lỗi nghiệp vụ: Postgres 23505 (trùng unique) → 409</span>
+<span class="k">const</span> column = uniqueViolationColumn(error);   <span class="c">// 'email' | 'username' | 'slug' | undefined</span></code></pre>
+<p>Nest có sẵn <code>NotFoundException</code>, <code>ForbiddenException</code>, <code>UnauthorizedException</code>... Dự án dùng <code>HttpException</code> với body tự định nghĩa, vì spec đòi body dạng <code>{"errors": {...}}</code> chứ không phải <code>{"statusCode","message"}</code>.</p>
+
+<div class="box ok"><b class="t">Đã có: Exception Filter toàn cục (ISS-01), và vì sao cần</b>
+<p>Code thật: <a href="../src/common/all-exceptions.filter.ts">all-exceptions.filter.ts</a>, đăng ký bằng <code>{ provide: APP_FILTER, useClass: AllExceptionsFilter }</code> trong <a href="../src/app.module.ts">app.module.ts</a> (qua DI để tiêm được <code>I18nService</code>). Trước khi có nó, các lỗi mình chủ động ném đều đúng định dạng, nhưng lỗi <b>không lường trước</b> thì không:</p>
+<pre><code>POST /api/users  body: {bad json         → 400 {"statusCode":400,"message":"Unexpected token...","error":"Bad Request"}
+Lỗi DB bất kỳ (ví dụ FK 23503)           → 500 {"statusCode":500,"message":"Internal server error"}</code></pre>
+<p>Giờ: JSON hỏng → <code>400 {"errors":{"body":["is malformed"]}}</code>, route lạ → <code>404 {"errors":{"path":["not found"]}}</code>, lỗi lạ → 500 câu chung + log kèm stack. Bẫy: lỗi JSON xảy ra ở body-parser, <b>trước</b> middleware i18n, nên filter phải tự chọn ngôn ngữ.</p></div>
+
+<details class="task"><summary>Bài tập 6.1: So sánh bản mẫu dưới đây với bản thật trong dự án</summary>
+<p>Bản thật ở <a href="../src/common/all-exceptions.filter.ts">all-exceptions.filter.ts</a> khác bản mẫu ở 3 chỗ: tiêm <code>I18nService</code>, bảng <code>FRAMEWORK_ERRORS</code>, và hàm <code>localeOf</code>. Tự giải thích vì sao cần từng chỗ.</p>
+<p class="file">Tạo src/common/all-exceptions.filter.ts</p>
+<pre><code><span class="k">@Catch</span>()                                      <span class="c">// không tham số = bắt MỌI lỗi</span>
+<span class="k">export class</span> AllExceptionsFilter <span class="k">implements</span> ExceptionFilter {
+  <span class="k">private readonly</span> logger = <span class="k">new</span> Logger(AllExceptionsFilter.name);
+
+  catch(exception: unknown, host: ArgumentsHost) {
+    <span class="k">const</span> res = host.switchToHttp().getResponse&lt;Response&gt;();
+
+    <span class="k">if</span> (exception <span class="k">instanceof</span> HttpException) {
+      <span class="k">const</span> body = exception.getResponse();
+      <span class="c">// Đã đúng dạng {"errors": ...} (do mình ném) → giữ nguyên</span>
+      <span class="k">if</span> (<span class="k">typeof</span> body === <span class="k">'object'</span> &amp;&amp; <span class="k">'errors'</span> <span class="k">in</span> body) {
+        <span class="k">return</span> res.status(exception.getStatus()).json(body);
+      }
+      <span class="c">// Lỗi của Nest/Express (JSON hỏng...) → bọc lại</span>
+      <span class="k">return</span> res.status(exception.getStatus())
+        .json({ errors: { body: [exception.message] } });
+    }
+
+    <span class="c">// Lỗi không lường trước: log đầy đủ, trả câu chung (không lộ chi tiết DB)</span>
+    <span class="k">this</span>.logger.error(exception);
+    res.status(<span class="k">500</span>).json({ errors: { server: [<span class="k">'internal error'</span>] } });
+  }
+}</code></pre>
+<p>Đăng ký trong <a href="../src/app.setup.ts">app.setup.ts</a> bằng <code>app.useGlobalFilters(new AllExceptionsFilter())</code>, để test e2e cũng chạy qua filter. Viết test trước: gửi JSON hỏng → mong đợi <code>body.errors</code> tồn tại.</p>
+<p class="c">Thử thêm: câu <code>'internal error'</code> nên đi qua i18n (key <code>errors.internal</code>) như các câu lỗi khác.</p>
+</details>
+
+<details class="task"><summary>Bài tập 6.2: Viết LoggerMiddleware (dự án đã có NoStoreMiddleware làm mẫu)</summary>
+<p>Xem middleware thật đầu tiên: <a href="../src/common/no-store.middleware.ts">no-store.middleware.ts</a> và cách đăng ký trong <code>AppModule.configure()</code>. Rồi tự viết thêm LoggerMiddleware:</p>
+<pre><code><span class="k">@Injectable</span>()
+<span class="k">export class</span> LoggerMiddleware <span class="k">implements</span> NestMiddleware {
+  <span class="k">private readonly</span> logger = <span class="k">new</span> Logger(<span class="k">'HTTP'</span>);
+  use(req: Request, res: Response, next: NextFunction) {
+    <span class="k">const</span> start = Date.now();
+    res.on(<span class="k">'finish'</span>, () =&gt;
+      <span class="k">this</span>.logger.log(<span class="k">`${</span>req.method<span class="k">} ${</span>req.originalUrl<span class="k">} ${</span>res.statusCode<span class="k">} ${</span>Date.now() - start<span class="k">}ms`</span>));
+    next();                       <span class="c">// QUÊN next() → request treo mãi</span>
+  }
+}
+
+<span class="c">// app.module.ts: middleware đăng ký bằng configure(), không phải trong @Module()</span>
+<span class="k">export class</span> AppModule <span class="k">implements</span> NestModule {
+  configure(consumer: MiddlewareConsumer) {
+    consumer.apply(LoggerMiddleware).forRoutes(<span class="k">'*'</span>);
+  }
+}</code></pre>
+<p>Câu hỏi: vì sao <b>không</b> nên log <code>req.body</code>? (gợi ý: body login chứa mật khẩu.) Vì sao kiểm token đặt ở Guard mà không đặt ở Middleware? (gợi ý: middleware không biết route nào là tuỳ chọn.)</p>
+</details>
+
+<div class="box warn"><b class="t">Bẫy đã gặp</b>
+<p>• <code>@IsOptional()</code> cho qua cả <code>null</code>, nên <code>{"tagList": null}</code> lọt vào service. Dự án dùng <code>ValidateIf(v =&gt; v !== undefined)</code>: chỉ bỏ qua khi field <b>không gửi</b>.</p>
+<p>• Một field sai nhiều luật thì chỉ trả <b>lỗi gốc</b>. Ví dụ title rỗng chỉ báo "can't be blank", không kèm "is too long". Xem <code>ROOT_CONSTRAINTS</code> trong <a href="../src/common/validation-exception.factory.ts">validation-exception.factory.ts</a>.</p>
+<p>• <code>?offset=1e20</code>: <code>Number.isInteger(1e20)</code> là <code>true</code>, nên số khổng lồ lọt qua và Postgres trả 500. Cần chặn trên bằng <code>@Max()</code>.</p></div>
+<p class="legend">📘 Bài học: <a href="../../learning/lessons/01-overview/07-pipes/README.md">07-pipes</a> · <a href="../../learning/lessons/01-overview/06-exception-filters/README.md">06-exception-filters</a> · <a href="../../learning/lessons/01-overview/05-middleware/README.md">05-middleware</a> · <a href="../../learning/lessons/01-overview/09-interceptors/README.md">09-interceptors</a></p>
+<button class="done-btn" data-done="6">Đánh dấu đã hiểu</button>
+</section>
+
+<section class="ch">
+<h2><span class="n">→</span>Học theo thứ tự nào</h2>
+<table>
+<tr><th>Bước</th><th>Đọc</th><th>Làm</th></tr>
+<tr><td>1</td><td>Chương 1–2</td><td>Bài tập 1.1 (xoá import, đọc lỗi DI)</td></tr>
+<tr><td>2</td><td>Chương 3</td><td>Gọi từng endpoint trong <a href="../requests/articles.http">requests/articles.http</a>, rồi làm bài tập 3.1</td></tr>
+<tr><td>3</td><td>Chương 6 (Pipe)</td><td>Gửi body sai từng kiểu, xem 422 trả về gì</td></tr>
+<tr><td>4</td><td>Chương 5</td><td>Bài tập 5.1</td></tr>
+<tr><td>5</td><td>Chương 4</td><td>Bài tập 4.1 (transaction)</td></tr>
+<tr><td>6</td><td>Chương 6 (Filter, Middleware)</td><td>Bài tập 6.1, 6.2</td></tr>
+</table>
+<p class="c">Bài tập 4.1, 5.1, 6.1 giờ là "đọc code thật và giải thích". Bài 3.1 (@Patch) và 6.2 (LoggerMiddleware) vẫn để bạn tự làm. Mọi lỗi đã sửa: <a href="tracker.html">sổ theo dõi vấn đề</a>.</p>
+</section>
+</main>
+</div>
+<button class="theme" id="theme" type="button">Giao diện</button>
+
+<script>
+(function () {
+  var KEY = 'hoc-nestjs-done';
+  var done = {};
+  try { done = JSON.parse(localStorage.getItem(KEY) || '{}') || {}; } catch (e) { done = {}; }
+
+  function save() { try { localStorage.setItem(KEY, JSON.stringify(done)); } catch (e) {} }
+  function render() {
+    var n = 0;
+    document.querySelectorAll('[data-done]').forEach(function (b) {
+      var id = b.getAttribute('data-done');
+      var on = !!done[id];
+      if (on) n++;
+      b.classList.toggle('on', on);
+      b.textContent = on ? '✓ Đã hiểu' : 'Đánh dấu đã hiểu';
+      var link = document.querySelector('#toc a[href="#c' + id + '"]');
+      if (link) {
+        link.classList.toggle('done', on);
+        link.querySelector('.dot').textContent = on ? '✓' : '';
+      }
+    });
+    document.getElementById('bar').style.width = (n / 6 * 100) + '%';
+    document.getElementById('prog').textContent = n + '/6 chương';
+  }
+  document.querySelectorAll('[data-done]').forEach(function (b) {
+    b.addEventListener('click', function () {
+      var id = b.getAttribute('data-done');
+      done[id] = !done[id];
+      save(); render();
+    });
+  });
+  render();
+
+  var root = document.documentElement;
+  try { var t = localStorage.getItem('hoc-nestjs-theme'); if (t) root.setAttribute('data-theme', t); } catch (e) {}
+  document.getElementById('theme').addEventListener('click', function () {
+    var dark = root.getAttribute('data-theme') === 'dark' ||
+      (!root.getAttribute('data-theme') && matchMedia('(prefers-color-scheme: dark)').matches);
+    var next = dark ? 'light' : 'dark';
+    root.setAttribute('data-theme', next);
+    try { localStorage.setItem('hoc-nestjs-theme', next); } catch (e) {}
+  });
+})();
+</script>
+</body>
+</html>
