@@ -27,7 +27,7 @@ Bảng hợp đồng đầy đủ (mã trạng thái, câu lỗi nguyên văn): 
 
 ## Validation (class-validator)
 - Field bắt buộc: `@IsNotEmpty()` → `can't be blank`. Field tuỳ chọn nhưng không được null (PUT email/username/password): `ValidateIf(v !== undefined)`, không dùng `@IsOptional` (nó bỏ qua null).
-- Chuỗi người dùng nhập: `@Trim()` cho tên/email; luôn có `@MaxLength`.
+- Chuỗi người dùng nhập: `@Trim()` cho tên/email; luôn có `@MaxLength`. Field nội dung giữ nguyên khoảng trắng (description, body): `@NotBlank()` thay `@IsNotEmpty()` để `"   "` vẫn là rỗng.
 - Tag lưu chữ thường: `@TagNames()` cho `tagList`, `@TagName()` cho `?tag=` (ISS-21).
 - `image` của user: `@IsUrl` http/https; `null` / `""` = xoá ảnh (ISS-22).
 - Ký tự NUL làm Postgres lỗi 22021 → 500: mọi chuỗi đi vào truy vấn — body, **query DTO** và **`:param`** (vd. `:slug`) — phải chặn bằng `@NoNulChar()` (mảng: `{ each: true }`) hoặc kiểm `includes('\u0000')` → 404.
@@ -45,6 +45,8 @@ Bảng hợp đồng đầy đủ (mã trạng thái, câu lỗi nguyên văn): 
 - Payload JWT chỉ `{ sub: userId }`; secret từ `JWT_SECRET`. Đổi mật khẩu **không** thu hồi token cũ: bộ test chính thức đòi token cũ vẫn dùng được (`errors_auth.hurl:240–261`, ISS-03).
 - Guard kiểm cả user còn tồn tại; header sai dạng (`Bearer x`) → 401 `is invalid`, kể cả ở endpoint tuỳ chọn.
 - Login giới hạn theo IP bằng `ThrottlerGuard` (`src/users/login-throttle.ts`, env `LOGIN_THROTTLE_*`) → 429 `{"errors":{"request":[…]}}`; e2e nới lên 1000 trong `vitest.config.e2e.ts` (ISS-20).
+- Chạy sau reverse proxy: đặt `TRUST_PROXY` (main.ts), không thì throttle đếm chung IP của proxy.
+- Env bắt buộc kiểm lúc khởi động, coi chuỗi rỗng là thiếu (`.env` hay có dòng `X=`): dùng `||` / hàm kiểm riêng, không dùng `??` hay `getOrThrow`.
 - Login sai email hay sai mật khẩu đều trả cùng `401 credentials invalid` (so với hash giả khi không có user).
 - Kiểm quyền sở hữu trong service trước khi sửa/xoá.
 - Không bao giờ trả `password`/hash; không log token hay mật khẩu.
