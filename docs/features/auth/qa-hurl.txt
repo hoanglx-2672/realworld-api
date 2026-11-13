@@ -1,0 +1,12 @@
+# 2026-11-12T02:38:35.764Z  host=http://localhost:3000  uid=179445111216420232
+# npx -y @orangeopensource/hurl --test --jobs 1 --continue-on-error --variable host=http://localhost:3000 --variable uid=179445111216420232 docs\realworld-spec\hurl\auth.hurl docs\realworld-spec\hurl\errors_auth.hurl
+
+Success docs\realworld-spec\hurl\auth.hurl (20 request(s) in 396 ms)
+Success docs\realworld-spec\hurl\errors_auth.hurl (23 request(s) in 428 ms)
+--------------------------------------------------------------------------------
+Executed files:    2
+Executed requests: 43 (51.8/s)
+Succeeded files:   2 (100.0%)
+Failed files:      0 (0.0%)
+Duration:          830 ms (0h:0m:0s:830ms)
+
