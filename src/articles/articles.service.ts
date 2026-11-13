@@ -17,7 +17,7 @@ import {
 import type { CreateArticleDto } from './dto/create-article.dto.js';
 import type { ListArticlesQueryDto } from './dto/list-articles-query.dto.js';
 import type { UpdateArticleDto } from './dto/update-article.dto.js';
-import { uniqueSlug } from './slug.js';
+import { slugify, uniqueSlug } from './slug.js';
 
 /** Một trang danh sách bài, đúng hình dạng spec. */
 export interface ArticlePage {
@@ -71,8 +71,12 @@ export class ArticlesService {
         this.assertAuthor(article, userId);
 
         if (dto.title !== undefined && dto.title !== article.title) {
+          // Chỉ đổi slug khi phần chữ đổi: "Hello world" → "Hello, world!" cùng gốc
+          // "hello-world" → giữ slug cũ, link đã chia sẻ không chết.
+          if (slugify(dto.title) !== slugify(article.title)) {
+            article.slug = uniqueSlug(dto.title);
+          }
           article.title = dto.title;
-          article.slug = uniqueSlug(dto.title);
         }
         if (dto.description !== undefined) {
           article.description = dto.description;

@@ -495,5 +495,18 @@ describe('articles (e2e)', () => {
       const ok = await put('  # Tiêu đề\n').expect(200);
       expect(ok.body.article.body).toBe('  # Tiêu đề\n');
     });
+
+    it('PR8-03 đổi title chỉ khác dấu câu / hoa thường → giữ slug, title vẫn đổi', async () => {
+      const title = `Hello world ${id}`;
+      const { slug } = (await create(newArticle({ title })).expect(201)).body
+        .article;
+      const res = await http()
+        .put(`/api/articles/${slug}`)
+        .set('Authorization', `Token ${author.token}`)
+        .send({ article: { title: `HELLO, world! ${id}` } })
+        .expect(200);
+      expect(res.body.article.slug).toBe(slug);
+      expect(res.body.article.title).toBe(`HELLO, world! ${id}`);
+    });
   });
 });
