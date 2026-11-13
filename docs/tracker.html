@@ -83,10 +83,10 @@ h2{font-size:19px;margin:34px 0 8px}
 
   <div class="checks">
     <table>
-      <tr><td>Cổng kiểm</td><td>7 PASS · 0 FAIL (lint, typecheck, unit, e2e, migration, Sunlint)</td></tr>
-      <tr><td>Test</td><td>e2e <b>136/136</b> · unit <b>22/22</b></td></tr>
-      <tr><td>Hurl chính thức</td><td>auth 43/43 · articles 17/17 · pagination 7/7 · tags 4/4 · errors_articles 15/20 (5 hỏng thuộc Feed/Favorite chưa làm) · feed 0/12 (chưa làm)</td></tr>
-      <tr><td>Sunlint</td><td>0 lỗi · 30 cảnh báo · điểm 73.2 (ban đầu 31 cảnh báo, 65.5 điểm)</td></tr>
+      <tr><td>Cổng kiểm</td><td>9 PASS · 0 FAIL · 1 WARN cỡ PR (vệ sinh repo, lint, typecheck, unit, e2e, migration, Sunlint) — 2026-11-13</td></tr>
+      <tr><td>Test</td><td>e2e <b>157/157</b> · unit <b>51/51</b> — 2026-11-13, sau đợt sửa theo review PR</td></tr>
+      <tr><td>Hurl chính thức</td><td>Đạt: auth 20/20 + errors_auth 23/23 · articles 17/17 · pagination 7/7 · tags 4/4. Hỏng vì feature chưa làm (404 do chưa có route): profiles, errors_profiles, feed, comments, errors_comments, favorites, errors_authorization, errors_articles (dừng ở request feed). Xem docs/features/all/qa-hurl.txt.</td></tr>
+      <tr><td>Sunlint</td><td>0 lỗi. Toàn bộ src (trước khi có git): 30 cảnh báo, 74.1 điểm. Từ khi có git, kiem.mjs chỉ chấm file thay đổi (--changed-files) nên điểm không so được với số cũ.</td></tr>
     </table>
   </div>
 
@@ -236,11 +236,11 @@ var ISSUES = [
     fix: 'Khi làm feature Feed: khai báo @Get("feed") TRƯỚC @Get(":slug"). Luật đã ghi trong .claude/rules/api.md.',
     files: ['src/articles/articles.controller.ts'], tests: 'errors_articles.hurl:39, feed.hurl' },
 
-  { id: 'ISS-24', status: 'open', sev: 'thap', title: 'Response JSON hỏng không có Cache-Control',
+  { id: 'ISS-24', status: 'done', sev: 'thap', title: 'Response JSON hỏng không có Cache-Control',
     source: 'tự phát hiện khi kiểm ISS-04', date: '2026-11-12',
     problem: 'body-parser của Express chạy trước middleware của Nest, nên request JSON hỏng không đi qua NoStoreMiddleware. Response chỉ chứa câu lỗi, không chứa dữ liệu riêng.',
-    fix: 'Rủi ro rất thấp. Nếu muốn tuyệt đối: đặt header ngay trong AllExceptionsFilter.',
-    files: ['src/common/all-exceptions.filter.ts'], tests: '—' },
+    fix: 'Review PR #3 nêu lại → AllExceptionsFilter tự đặt Cache-Control: no-store cho mọi response lỗi (hằng số dùng chung với NoStoreMiddleware).',
+    files: ['src/common/all-exceptions.filter.ts', 'src/common/no-store.middleware.ts'], tests: 'unit filter (no-store) · issues e2e ISS-24' },
 
   { id: 'ISS-25', status: 'open', sev: 'thap', title: '?limit= rỗng → 422, còn ?offset= rỗng → 0',
     source: 'soát pagination', date: '2026-11-12',
@@ -254,11 +254,35 @@ var ISSUES = [
     fix: 'Khi dữ liệu lớn: thay IDX_articles_created_at bằng index (created_at DESC, id DESC). OFFSET sâu vẫn tốn O(offset): spec bắt dùng offset nên không đổi sang cursor.',
     files: ['src/articles/article.entity.ts', 'migration mới'], tests: '—' },
 
-  { id: 'ISS-27', status: 'open', sev: 'thap', title: 'Test R-04 (updatedAt đổi khi chỉ sửa tagList) chập chờn',
+  { id: 'ISS-27', status: 'done', sev: 'thap', title: 'Test R-04 (updatedAt đổi khi chỉ sửa tagList) chập chờn',
     source: 'kiểm từng nhánh khi tách PR', date: '2026-11-13',
-    problem: 'Fail 1 trong 9 lần chạy cả bộ e2e, đúng lần đầu ngay sau khi Docker Desktop vừa khởi động; 8 lần sau (5 lần chạy riêng, 3 lần cả bộ) đều qua. created_at/updated_at do Postgres trong VM của Docker đặt, test chỉ chờ 15 ms giữa tạo và sửa.',
-    fix: 'Nghi đồng hồ VM bị chỉnh lại lúc mới khởi động (chưa chứng minh). Hướng sửa: so sánh updatedAt > createdAt thay vì "khác before.updatedAt", hoặc đặt updatedAt từ một nguồn giờ duy nhất.',
-    files: ['test/articles.e2e-spec.ts', 'src/common/base.entity.ts'], tests: 'articles e2e R-04' },
+    problem: 'Fail 1 trong 9 lần chạy cả bộ e2e, đúng lần đầu ngay sau khi Docker Desktop vừa khởi động; 8 lần sau (5 lần chạy riêng, 3 lần cả bộ) đều qua. created_at do Postgres (giờ của VM Docker) đặt, nhưng khi chỉ đổi tag thì updatedAt lại lấy new Date() của app (giờ máy thật) — review PR #8 chỉ ra hai đồng hồ khác nhau.',
+    fix: 'updatedAt khi chỉ đổi tag giờ cũng lấy CURRENT_TIMESTAMP của DB (cùng nguồn với created_at). Test R-04 chặt hơn: updatedAt phải LỚN HƠN giá trị cũ, không chỉ khác. Nguyên nhân gốc (đồng hồ VM chỉnh lại lúc khởi động) vẫn là suy đoán; sau khi sửa, e2e chạy nhiều lần đều qua.',
+    files: ['src/articles/articles.service.ts', 'test/articles.e2e-spec.ts'], tests: 'articles e2e R-04' },
+
+  { id: 'ISS-28', status: 'open', sev: 'thap', title: 'Username phân biệt hoa thường ("Jake" và "jake" là hai người)',
+    source: 'review PR #6, #7 (GitHub)', date: '2026-11-13',
+    problem: 'Email đã chuẩn hoá chữ thường, username thì chưa: có thể giả danh trên /profiles/:username.',
+    fix: 'Cần bạn quyết: spec RealWorld không đòi; đổi thì cần unique index trên lower(username) + migration xử lý trùng sẵn có. Nên làm cùng PR Profiles.',
+    files: ['src/users/user.entity.ts', 'src/users/users.service.ts'], tests: '—' },
+
+  { id: 'ISS-29', status: 'open', sev: 'thap', title: 'Kiểm NUL của :slug lặp ở từng hàm tra cứu',
+    source: 'review PR #8 (GitHub)', date: '2026-11-13',
+    problem: 'hasNul() gọi trong findBySlugOrThrow và lockBySlugOrThrow; route favorite/comments sắp tới dễ quên → 22021 → 500.',
+    fix: 'Khi làm Favorites/Comments: thêm ParseSlugPipe dùng chung cho mọi :slug.',
+    files: ['src/articles/articles.service.ts'], tests: '—' },
+
+  { id: 'ISS-33', status: 'open', sev: 'thap', title: 'Bảng follows không chặn tự follow ở mức DB',
+    source: 'review PR #6 (GitHub)', date: '2026-11-13',
+    problem: 'Thiếu CHECK (follower_id <> following_id); chỉ service chặn.',
+    fix: 'Làm cùng PR Follow: migration thêm CHECK + test.',
+    files: ['src/users/user.entity.ts'], tests: '—' },
+
+  { id: 'ISS-34', status: 'open', sev: 'thap', title: 'Bước migration/e2e của CI chạy có điều kiện (hashFiles)',
+    source: 'review PR #5 (GitHub)', date: '2026-11-13',
+    problem: 'Điều kiện cần cho các PR xếp chồng trước khi có schema, nhưng sau này nếu data-source.ts bị đổi tên thì CI im lặng bỏ qua thay vì hỏng.',
+    fix: 'Sau khi PR schema merge vào master: bỏ điều kiện if: ở hai bước migration và bước e2e.',
+    files: ['.github/workflows/ci.yml'], tests: '—' },
 
   { id: 'ISS-30', status: 'skip', sev: 'thap', title: 'Sunlint S037 vẫn báo "handler thiếu anti-cache header" (8)',
     source: 'Sunlint', date: '2026-11-12',
@@ -280,6 +304,7 @@ var ISSUES = [
 ];
 
 var LOG = [
+  ['2026-11-13', 'Tách lịch sử thành 11 PR, push lên GitHub (private). Copilot review không chạy được với tài khoản này → Claude review thay: 80 nhận xét trên PR #1–#10. Sửa 53 nhận xét bằng commit trên đúng nhánh (mỗi nhận xét một commit, vài commit gộp hai nhận xét cùng chỗ; lỗi hành vi có test); 27 nhận xét còn lại trả lời lý do ngay trong thread, mục cần làm sau thành ISS-28, 29, 33, 34. Phát hiện thêm: export hàm phụ trong file migration làm TypeORM hỏng (cổng kiểm bắt được). e2e 157/157 · unit 51/51.'],
   ['2026-11-12', 'Lập sổ theo dõi; gom 25 mục từ review auth, review articles, QA, review độc lập toàn bộ code và Sunlint.'],
   ['2026-11-12', 'PR art-4: sửa ISS-06..09, 11, 14, 15, 17. 9 test fail đúng lý do trước khi sửa (ISS-08 tái hiện được thật).'],
   ['2026-11-12', 'Sửa ISS-01, 02, 04, 05, 10, 12, 13, 16. Thử ISS-03 → làm hỏng errors_auth.hurl:261 → gỡ hoàn toàn, chuyển "không sửa". Bài học: lần kiểm trước khi làm, lệnh grep bị head cắt mất dòng chứng minh — kết luận "Hurl không đổi mật khẩu" là sai.'],
