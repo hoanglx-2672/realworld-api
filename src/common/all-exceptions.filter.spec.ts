@@ -70,6 +70,28 @@ describe('AllExceptionsFilter', () => {
     expect(body).toEqual({ errors: { path: ['vi:errors.notFound'] } });
   });
 
+  it.each([
+    ['en;q=0.1, vi;q=0.9', 'vi'],
+    ['vi;q=0, en', 'en'],
+    ['*, vi;q=0.5', 'vi'],
+  ])(
+    'Accept-Language %s → %s (xét trọng số q như resolver của app)',
+    (header, locale) => {
+      const { body } = run(new NotFoundException(), {
+        headers: { 'accept-language': header },
+      });
+      expect(body.errors.path[0]).toBe(`${locale}:errors.notFound`);
+    },
+  );
+
+  it('?lang thắng x-lang và Accept-Language', () => {
+    const { body } = run(new NotFoundException(), {
+      query: { lang: 'vi' },
+      headers: { 'x-lang': 'en', 'accept-language': 'en' },
+    });
+    expect(body.errors.path[0]).toBe('vi:errors.notFound');
+  });
+
   it('lỗi 4xx thường (không có trong bảng) → không ghi log', () => {
     run(new NotFoundException());
     expect(Logger.prototype.error).not.toHaveBeenCalled();

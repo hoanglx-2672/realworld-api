@@ -7,7 +7,13 @@ import {
   Injectable,
   Logger,
 } from '@nestjs/common';
-import { I18nService, t } from '@nestjs/i18n';
+import {
+  AcceptLanguageLocaleResolver,
+  HeaderLocaleResolver,
+  I18nService,
+  type LocaleResolver,
+  QueryLocaleResolver,
+} from '@nestjs/i18n';
 import type { Request, Response } from 'express';
 
 type ErrorsBody = { errors: Record<string, string[]> };
@@ -19,6 +25,13 @@ const FRAMEWORK_ERRORS: Partial<Record<number, [string, string]>> = {
   [HttpStatus.PAYLOAD_TOO_LARGE]: ['body', 'errors.tooLarge'], // > 100 kB
   [HttpStatus.TOO_MANY_REQUESTS]: ['request', 'errors.tooManyRequests'], // ThrottlerGuard
 };
+
+/** Cùng danh sách và thứ tự với I18nModule trong app.module.ts. */
+const LOCALE_RESOLVERS: LocaleResolver[] = [
+  new QueryLocaleResolver('lang'),
+  new HeaderLocaleResolver('x-lang'),
+  new AcceptLanguageLocaleResolver(),
+];
 
 const isErrorsBody = (body: unknown): body is ErrorsBody =>
   typeof body === 'object' && body !== null && 'errors' in body;
@@ -85,28 +98,25 @@ export class AllExceptionsFilter implements ExceptionFilter {
   }
 
   /**
-   * Lỗi JSON hỏng xảy ra ở body-parser, **trước** middleware i18n → `t()` chưa có
-   * ngữ cảnh ngôn ngữ (trả lại chính key). Khi đó tự chọn ngôn ngữ theo đúng thứ tự
-   * resolver trong app.module.ts: `?lang` → `x-lang` → `Accept-Language`.
+   * Luôn tự chọn ngôn ngữ, không dựa vào ngữ cảnh i18n: lỗi body-parser (JSON hỏng, body
+   * quá lớn) xảy ra **trước** middleware i18n nên không có ngữ cảnh. Dùng đúng các resolver,
+   * cùng thứ tự với app.module.ts, nên mọi lỗi chọn cùng một ngôn ngữ
+   * (`Accept-Language` xét cả trọng số q, bỏ `*` và `q=0`).
    */
   private translate(key: string, request: Request): string {
-    const inContext = t(key as never);
-    if (inContext !== key) return inContext;
     return this.i18n.translate(key, { locale: this.localeOf(request) });
   }
 
   private localeOf(request: Request): string | undefined {
-    const query = request.query?.lang;
-    const header = request.headers['x-lang'];
-    const accepted = (request.headers['accept-language'] ?? '')
-      .split(',')
-      .map((part) => part.split(';')[0].trim());
-    const candidates = [query, header, ...accepted].filter(
-      (c): c is string => typeof c === 'string' && c.length > 0,
-    );
-    for (const candidate of candidates) {
-      const locale = this.i18n.matchLocale(candidate);
-      if (locale) return locale;
+    const input = { headers: request.headers, query: request.query ?? {} };
+    for (const resolver of LOCALE_RESOLVERS) {
+      const found = resolver.resolve(input);
+      const candidates = Array.isArray(found) ? found : [found];
+      for (const candidate of candidates) {
+        if (typeof candidate !== 'string' || !candidate) continue;
+        const locale = this.i18n.matchLocale(candidate);
+        if (locale) return locale;
+      }
     }
     return undefined;
   }
