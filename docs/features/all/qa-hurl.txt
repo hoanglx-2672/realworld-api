@@ -1,0 +1,94 @@
+# 2026-11-12T06:49:01.927Z  host=http://localhost:3000  uid=17944661339064716
+# npx -y @orangeopensource/hurl --test --jobs 1 --variable host=http://localhost:3000 --variable uid=17944661339064716 docs\realworld-spec\hurl\auth.hurl docs\realworld-spec\hurl\errors_auth.hurl docs\realworld-spec\hurl\profiles.hurl docs\realworld-spec\hurl\errors_profiles.hurl docs\realworld-spec\hurl\articles.hurl docs\realworld-spec\hurl\feed.hurl docs\realworld-spec\hurl\pagination.hurl docs\realworld-spec\hurl\errors_articles.hurl docs\realworld-spec\hurl\comments.hurl docs\realworld-spec\hurl\errors_comments.hurl docs\realworld-spec\hurl\errors_authorization.hurl docs\realworld-spec\hurl\favorites.hurl docs\realworld-spec\hurl\tags.hurl
+
+Success docs\realworld-spec\hurl\auth.hurl (20 request(s) in 1156 ms)
+Success docs\realworld-spec\hurl\errors_auth.hurl (23 request(s) in 782 ms)
+error: Assert status code
+  --> docs\realworld-spec\hurl\profiles.hurl:27:6
+   |
+   | GET {{host}}/api/profiles/celeb_{{uid}}
+27 | HTTP 200
+   |      ^^^ actual value is <404>
+   |
+
+Failure docs\realworld-spec\hurl\profiles.hurl (3 request(s) in 489 ms)
+error: Assert failure
+  --> docs\realworld-spec\hurl\errors_profiles.hurl:5:0
+   |
+   | GET {{host}}/api/profiles/unknown-user-{{uid}}
+   | ...
+ 5 | jsonpath "$.errors.profile[0]" == "not found"
+   |   actual:   none
+   |   expected: string <not found>
+   |
+
+Failure docs\realworld-spec\hurl\errors_profiles.hurl (1 request(s) in 1 ms)
+Success docs\realworld-spec\hurl\articles.hurl (17 request(s) in 575 ms)
+error: Assert status code
+   --> docs\realworld-spec\hurl\feed.hurl:30:6
+    |
+    | GET {{host}}/api/articles/feed
+    | ...
+ 30 | HTTP 200
+    |      ^^^ actual value is <404>
+    |
+
+Failure docs\realworld-spec\hurl\feed.hurl (3 request(s) in 323 ms)
+Success docs\realworld-spec\hurl\pagination.hurl (7 request(s) in 291 ms)
+error: Assert status code
+   --> docs\realworld-spec\hurl\errors_articles.hurl:39:6
+    |
+    | GET {{host}}/api/articles/feed
+ 39 | HTTP 401
+    |      ^^^ actual value is <404>
+    |
+
+Failure docs\realworld-spec\hurl\errors_articles.hurl (5 request(s) in 24 ms)
+error: Assert status code
+   --> docs\realworld-spec\hurl\comments.hurl:36:6
+    |
+    | POST {{host}}/api/articles/{{slug}}/comments
+    | ...
+ 36 | HTTP 201
+    |      ^^^ actual value is <404>
+    |
+
+Failure docs\realworld-spec\hurl\comments.hurl (3 request(s) in 204 ms)
+error: Assert status code
+  --> docs\realworld-spec\hurl\errors_comments.hurl:8:6
+   |
+   | POST {{host}}/api/articles/some-slug/comments
+   | ...
+ 8 | HTTP 401
+   |      ^^^ actual value is <404>
+   |
+
+Failure docs\realworld-spec\hurl\errors_comments.hurl (1 request(s) in 11 ms)
+error: Assert status code
+  --> docs\realworld-spec\hurl\errors_authorization.hurl:68:6
+   |
+   | POST {{host}}/api/articles/{{slug}}/comments
+   | ...
+68 | HTTP 201
+   |      ^^^ actual value is <404>
+   |
+
+Failure docs\realworld-spec\hurl\errors_authorization.hurl (6 request(s) in 478 ms)
+error: Assert status code
+   --> docs\realworld-spec\hurl\favorites.hurl:31:6
+    |
+    | POST {{host}}/api/articles/{{slug}}/favorite
+    | ...
+ 31 | HTTP 200
+    |      ^^^ actual value is <404>
+    |
+
+Failure docs\realworld-spec\hurl\favorites.hurl (3 request(s) in 258 ms)
+Success docs\realworld-spec\hurl\tags.hurl (4 request(s) in 236 ms)
+--------------------------------------------------------------------------------
+Executed files:    13
+Executed requests: 96 (19.7/s)
+Succeeded files:   5 (38.5%)
+Failed files:      8 (61.5%)
+Duration:          4878 ms (0h:0m:4s:878ms)
+
