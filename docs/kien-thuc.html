@@ -140,8 +140,8 @@ update(@CurrentAuth() auth: AuthContext, @Body() body: ...) {}</code></pre>`,
     k:`<pre><code>JwtModule.registerAsync({
   inject: [ConfigService],
   useFactory: (c: ConfigService) =&gt; ({
-    secret: c.getOrThrow('JWT_SECRET'),   <span class="c">// thiếu → app không khởi động</span>
-    signOptions: { expiresIn: parseExpiresIn(c.get('JWT_EXPIRES_IN', '7d')) },
+    secret: requireSecret(c.get('JWT_SECRET')),   <span class="c">// thiếu hoặc rỗng → app không khởi động</span>
+    signOptions: { expiresIn: parseExpiresIn(c.get('JWT_EXPIRES_IN')) }, <span class="c">// rỗng → 7d</span>
   }),
 })</code></pre>
 <p><code>AuthModule</code> <code>exports: [JwtModule]</code> → module nào import AuthModule mới inject được <code>JwtService</code> (guard cần nó).</p>`,
@@ -265,7 +265,7 @@ return tags.findBy({ name: In(names) });</code></pre>`,
     t:'Deadlock (review R-03) không tái hiện được qua 40 cặp request đồng thời, nhưng sắp xếp tên chỉ tốn một dòng nên vẫn thêm.' },
   { g:'db', id:'D9', title:'<code>@UpdateDateColumn</code> không chạy khi chỉ đổi quan hệ',
     p:'PUT chỉ đổi <code>tagList</code> → <code>updatedAt</code> giữ nguyên.',
-    k:'<p>TypeORM chỉ ghi bảng nối <code>article_tags</code>, không UPDATE dòng <code>articles</code>. Đặt tay <code>article.updatedAt = new Date()</code> khi có <code>tagList</code>.</p>',
+    k:'<p>TypeORM chỉ ghi bảng nối <code>article_tags</code>, không UPDATE dòng <code>articles</code>. Khi có <code>tagList</code>, chạy thêm <code>UPDATE articles SET updated_at = CURRENT_TIMESTAMP</code>: giờ của DB, cùng nguồn với <code>created_at</code> (dùng <code>new Date()</code> của app thì hai đồng hồ có thể lệch, ISS-27).</p>',
     w:[['articles.service.ts · update','../src/articles/articles.service.ts']],
     t:'Bộ test chính thức không kiểm trường hợp này; review phát hiện (R-04).' },
   { g:'db', id:'D10', title:'Xoá dây chuyền bằng khoá ngoại <code>ON DELETE CASCADE</code>',
@@ -276,7 +276,7 @@ return tags.findBy({ name: In(names) });</code></pre>`,
   // ===== Security =====
   { g:'sec', id:'S1', title:'Băm mật khẩu bằng bcrypt và đăng nhập không lộ email',
     p:'Kẻ dò thử login: "sai email" và "sai mật khẩu" phải trông giống hệt nhau, kể cả thời gian phản hồi.',
-    k:`<pre><code>const DUMMY_HASH = hashSync('not-a-real-password', 10);
+    k:`<pre><code>const DUMMY_HASH = '$2b$10$…'; <span class="c">// hash bcrypt tính sẵn: không chặn event loop lúc import</span>
 const ok = await compare(dto.password, user?.password ?? DUMMY_HASH);
 if (!user || !ok) throw 401 {"errors": {"credentials": ["invalid"]}}</code></pre>
 <p>Không có user vẫn chạy bcrypt so với hash giả → thời gian như nhau.</p>`,

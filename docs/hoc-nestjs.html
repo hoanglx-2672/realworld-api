@@ -200,8 +200,8 @@ AuthModule                        <span class="c">không có controller; chỉ c
     JwtModule.registerAsync({
       inject: [ConfigService],                     <span class="c">// xin ConfigService từ DI</span>
       useFactory: (config: ConfigService) =&gt; ({
-        secret: config.getOrThrow&lt;string&gt;(<span class="k">'JWT_SECRET'</span>), <span class="c">// thiếu → app không chạy</span>
-        signOptions: { expiresIn: parseExpiresIn(config.get(<span class="k">'JWT_EXPIRES_IN'</span>, <span class="k">'7d'</span>)) },
+        secret: requireSecret(config.get(<span class="k">'JWT_SECRET'</span>)), <span class="c">// thiếu hoặc rỗng → app không chạy</span>
+        signOptions: { expiresIn: parseExpiresIn(config.get(<span class="k">'JWT_EXPIRES_IN'</span>)) }, <span class="c">// rỗng → 7d, sai → dừng</span>
       }),
     }),
   ],
@@ -368,7 +368,7 @@ npm run migration:run      <span class="c"># 4. chạy lại</span></code></pre>
 
 <div class="box warn"><b class="t">Bẫy đã gặp</b>
 <p>• <b>N+1:</b> nếu tính <code>favorited</code> từng bài một, 20 bài sẽ thành 20 câu SQL. Dự án dùng 3 câu <code>IN (...)</code> gộp, nên luôn là <b>6 câu</b> dù trang dài bao nhiêu (đã đo với <code>DB_LOGGING=true</code>).</p>
-<p>• <code>@UpdateDateColumn</code> <b>không tự cập nhật</b> khi chỉ đổi tag, vì TypeORM chỉ ghi vào bảng nối, không UPDATE bảng articles. Phải tự đặt <code>updatedAt = new Date()</code>.</p>
+<p>• <code>@UpdateDateColumn</code> <b>không tự cập nhật</b> khi chỉ đổi tag, vì TypeORM chỉ ghi vào bảng nối, không UPDATE bảng articles. Phải tự đặt, và đặt bằng giờ của DB (<code>CURRENT_TIMESTAMP</code>, cùng nguồn với <code>createdAt</code>), không dùng <code>new Date()</code> của app: hai đồng hồ lệch nhau thì <code>updatedAt</code> có thể nhỏ hơn <code>createdAt</code> (ISS-27).</p>
 <p>• <b>Thiếu transaction</b> (review tìm ra, đã sửa ở PR art-4): tag được tạo trước, sau đó lưu bài bị lỗi, thì tag bị mồ côi. Thêm nữa, PUT và DELETE gọi cùng lúc làm bài đã xoá "sống lại", vì <code>save()</code> không thấy dòng nên INSERT lại.</p></div>
 
 <details class="task"><summary>Bài tập 4.1: Transaction (đã làm ở art-4, hãy đọc và giải thích lại)</summary>
@@ -541,7 +541,7 @@ Lỗi DB bất kỳ (ví dụ FK 23503)           → 500 {"statusCode":500,"mes
 <p>Giờ: JSON hỏng → <code>400 {"errors":{"body":["is malformed"]}}</code>, route lạ → <code>404 {"errors":{"path":["not found"]}}</code>, lỗi lạ → 500 câu chung + log kèm stack. Bẫy: lỗi JSON xảy ra ở body-parser, <b>trước</b> middleware i18n, nên filter phải tự chọn ngôn ngữ.</p></div>
 
 <details class="task"><summary>Bài tập 6.1: So sánh bản mẫu dưới đây với bản thật trong dự án</summary>
-<p>Bản thật ở <a href="../src/common/all-exceptions.filter.ts">all-exceptions.filter.ts</a> khác bản mẫu ở 3 chỗ: tiêm <code>I18nService</code>, bảng <code>FRAMEWORK_ERRORS</code>, và hàm <code>localeOf</code>. Tự giải thích vì sao cần từng chỗ.</p>
+<p>Bản thật ở <a href="../src/common/all-exceptions.filter.ts">all-exceptions.filter.ts</a> khác bản mẫu ở 4 chỗ: tiêm <code>I18nService</code>, bảng <code>FRAMEWORK_ERRORS</code>, hàm <code>localeOf</code> dùng lại đúng các resolver của i18n, và đặt <code>Cache-Control: no-store</code> cho mọi lỗi. Tự giải thích vì sao cần từng chỗ (gợi ý: lỗi JSON hỏng xảy ra trước middleware).</p>
 <p class="file">Tạo src/common/all-exceptions.filter.ts</p>
 <pre><code><span class="k">@Catch</span>()                                      <span class="c">// không tham số = bắt MỌI lỗi</span>
 <span class="k">export class</span> AllExceptionsFilter <span class="k">implements</span> ExceptionFilter {

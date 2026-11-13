@@ -301,12 +301,12 @@ export class UserController {
 <pre><code>if (dto.username !== undefined || email !== undefined) {
   await this.assertAvailable(...);          <span class="c">// trùng → 409</span>
 }
-if (dto.password !== undefined) user.password = await hash(dto.password, 10);
-if (dto.bio !== undefined) user.bio = dto.bio || null;
-await this.saveOrConflict(user);</code></pre>`,
+if (dto.password !== undefined) patch.password = await hash(dto.password, 10);
+if (dto.bio !== undefined) patch.bio = dto.bio || null;
+await this.updateOrConflict(user.id, patch); <span class="c">// UPDATE ... WHERE id; 0 dòng → 401</span></code></pre>`,
     fail: 'Trùng username/email → <code>409 {"errors":{"username":["has already been taken"]}}</code>.' },
   { t: 'Repository (TypeORM)', where: 'Repository<User> trong constructor của service', file: '../src/users/users.service.ts',
-    body: `<p>Service nhận repository qua DI: <code>@InjectRepository(User) private readonly users: Repository&lt;User&gt;</code>. Gọi <code>findOneBy({ id })</code>, <code>save(user)</code>: TypeORM tự sinh SQL.</p>
+    body: `<p>Service nhận repository qua DI: <code>@InjectRepository(User) private readonly users: Repository&lt;User&gt;</code>. Gọi <code>findOneBy({ id })</code>, <code>update({ id }, patch)</code>: TypeORM tự sinh SQL. Vì sao không <code>save()</code>: user vừa bị xoá thì <code>save()</code> chuyển sang INSERT và lỗi 500.</p>
 <div class="callout try" style="margin:10px 0 0"><b>Thử</b>Đặt <code>DB_LOGGING=true</code> trong <code>.env</code>, gửi lại request: câu SQL thật in ra console của <code>start:dev</code>.</div>` },
   { t: 'Mapper → response', where: 'user.mapper.ts · toUserView, rồi controller bọc {user}', file: '../src/users/user.mapper.ts',
     body: `<p>Entity <code>User</code> có <code>password</code>. Mapper chỉ chép đúng 5 field spec cho phép. <b>Không bao giờ trả entity thẳng ra ngoài.</b></p>
@@ -322,12 +322,12 @@ const L = '../../learning/lessons/';
 const CONCEPTS = [
   { id:'module', t:'Module: đơn vị đóng gói',
     body:`<pre><code>@Module({
-  imports: [TypeOrmModule.forFeature([User]), AuthModule], <span class="c">// cần gì từ module khác</span>
+  imports: [AuthModule, LoginThrottleModule],   <span class="c">// cần gì từ module khác</span>
   controllers: [UsersController, UserController],          <span class="c">// route HTTP</span>
   providers: [UsersService],                               <span class="c">// class để DI</span>
 })
 export class UsersModule {}</code></pre>
-<p>Provider chỉ thấy được trong module của nó, trừ khi module đó <code>exports</code> và module kia <code>imports</code>. Ví dụ <code>AuthModule</code> có <code>exports: [JwtModule]</code> nên <code>UsersModule</code> dùng được <code>JwtService</code>.</p>`,
+<p>Provider chỉ thấy được trong module của nó, trừ khi module đó <code>exports</code> và module kia <code>imports</code>. Ví dụ <code>AuthModule</code> có <code>exports: [JwtModule, TypeOrmModule]</code> nên <code>UsersModule</code> dùng được <code>JwtService</code> và <code>Repository&lt;User&gt;</code> mà không đăng ký lại.</p>`,
     files:[['users.module.ts','../src/users/users.module.ts'],['auth.module.ts','../src/auth/auth.module.ts'],['app.module.ts','../src/app.module.ts']],
     lessons:[['01-overview/04-modules','01-overview/04-modules']] },
   { id:'controller', t:'Controller & routing',
@@ -351,7 +351,7 @@ export class UsersService {
 <ul>
 <li><code>ConfigModule.forRoot({ isGlobal: true })</code>: đọc <code>.env</code>, dùng <code>ConfigService</code> ở mọi nơi.</li>
 <li><code>TypeOrmModule.forRootAsync({ useFactory })</code>: kết nối DB, một lần ở AppModule.</li>
-<li><code>TypeOrmModule.forFeature([User])</code>: đăng ký repository <code>User</code> cho riêng UsersModule.</li>
+<li><code>TypeOrmModule.forFeature([User])</code>: đăng ký repository <code>User</code> (ở AuthModule, rồi export cho UsersModule dùng chung).</li>
 <li><code>JwtModule.registerAsync({ inject: [ConfigService], useFactory })</code>: <b>Async</b> vì phải đợi <code>ConfigService</code> để đọc <code>JWT_SECRET</code>.</li>
 </ul>`,
     files:[['app.module.ts','../src/app.module.ts'],['auth.module.ts','../src/auth/auth.module.ts']],
