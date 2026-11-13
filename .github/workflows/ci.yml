@@ -1,0 +1,82 @@
+# CI: chạy lại cổng kiểm của .claude/skills/review-feature/scripts/kiem.mjs trên GitHub
+# cho mỗi PR và mỗi lần push lên master (trừ SunLint: vẫn chạy ở máy, xem docs/tracker.html).
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [master]
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    services:
+      db:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_USER: realworld
+          POSTGRES_PASSWORD: realworld
+          POSTGRES_DB: realworld
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U realworld"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+
+    env:
+      DB_HOST: localhost
+      DB_PORT: 5432
+      DB_USERNAME: realworld
+      DB_PASSWORD: realworld
+      DB_DATABASE: realworld
+      DEFAULT_LOCALE: en
+      # Chỉ dùng cho DB tạm của CI, không phải secret thật.
+      JWT_SECRET: ci-only-secret-not-used-anywhere-else-0123456789
+      JWT_EXPIRES_IN: 7d
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+
+      - run: npm ci
+
+      - name: Lint (oxlint)
+        run: npm run lint
+
+      - name: Format (Prettier)
+        run: npx prettier --check "src/**/*.ts" "test/**/*.ts"
+
+      - name: Typecheck
+        run: npx tsc --noEmit -p tsconfig.json
+
+      - name: Unit test
+        run: npm test
+
+      # Hai bước dưới chỉ chạy khi nhánh đã có schema (từ PR feat/database-schema).
+      - name: Migration
+        if: hashFiles('src/database/data-source.ts') != ''
+        run: npm run migration:run
+
+      - name: Migration khớp entity
+        if: hashFiles('src/database/data-source.ts') != ''
+        # --check: thoát lỗi nếu entity đổi mà chưa có migration; không ghi file.
+        run: npx typeorm migration:generate -d dist/database/data-source.js --check src/database/migrations/CiCheck
+
+      - name: E2E test
+        if: hashFiles('test/**/*.e2e-spec.ts') != ''
+        run: npm run test:e2e
