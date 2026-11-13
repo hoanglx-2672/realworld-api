@@ -73,9 +73,13 @@ function timTrongSrc(re, thuMuc = 'src') {
 
 // ---------- 2. Cỡ PR + migration đã merge bị sửa ----------
 if (laGit && base) {
-  const numstat = chay(`git diff --numstat ${base}...HEAD`).out
-    + chay('git diff --numstat HEAD').out; // gồm cả thay đổi chưa commit
+  // So working tree với điểm rẽ nhánh: gồm commit, thay đổi chưa commit và file mới chưa add.
+  const goc = chay(`git merge-base ${base} HEAD`).out.trim();
+  const numstat = chay(`git diff --numstat ${goc}`).out;
   let tong = 0;
+  for (const f of chay('git ls-files --others --exclude-standard').out.split('\n').filter(Boolean)) {
+    if (!/package-lock\.json$|\.snap$/.test(f)) tong += readFileSync(f, 'utf8').split('\n').length;
+  }
   for (const dong of numstat.trim().split('\n').filter(Boolean)) {
     const [them, xoa, file] = dong.split('\t');
     if (/package-lock\.json$|\.snap$/.test(file)) continue;
@@ -84,7 +88,7 @@ if (laGit && base) {
   ghi(`Cỡ PR so với ${base}`, tong > NGUONG_DONG ? 'WARN' : 'PASS',
     `${tong} dòng (bỏ package-lock)${tong > NGUONG_DONG ? ` > ${NGUONG_DONG}: cân nhắc tách PR` : ''}`);
 
-  const suaMig = chay(`git diff --name-status ${base}...HEAD -- src/database/migrations`).out
+  const suaMig = chay(`git diff --name-status ${goc} -- src/database/migrations`).out
     .split('\n').filter((l) => /^[MDR]/.test(l));
   ghi('Không sửa/xoá migration đã có trên base', suaMig.length ? 'FAIL' : 'PASS',
     suaMig.length ? `${suaMig.join(', ')} — tạo migration MỚI thay vì sửa` : '');
