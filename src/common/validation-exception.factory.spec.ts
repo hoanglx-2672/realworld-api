@@ -70,4 +70,16 @@ describe('validationExceptionFactory', () => {
       },
     });
   });
+
+  it('lỗi không gắn field (body là [] → unknownValue) → key body, không phải "undefined"', () => {
+    expect(
+      bodyOf([
+        {
+          property: undefined as unknown as string,
+          constraints: { unknownValue: 'is invalid' },
+          children: [],
+        },
+      ]),
+    ).toEqual({ errors: { body: ['is invalid'] } });
+  });
 });

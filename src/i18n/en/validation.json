@@ -15,5 +15,6 @@
   "isInt": "must be an integer",
   "min": "must be greater than or equal to {constraint1}",
   "max": "must be less than or equal to {constraint1}",
-  "isUrl": "is invalid"
+  "isUrl": "is invalid",
+  "unknownValue": "is invalid"
 }

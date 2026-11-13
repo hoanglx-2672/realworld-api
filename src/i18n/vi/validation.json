@@ -15,5 +15,6 @@
   "isInt": "phải là số nguyên",
   "min": "phải lớn hơn hoặc bằng {constraint1}",
   "max": "phải nhỏ hơn hoặc bằng {constraint1}",
-  "isUrl": "không hợp lệ"
+  "isUrl": "không hợp lệ",
+  "unknownValue": "không hợp lệ"
 }

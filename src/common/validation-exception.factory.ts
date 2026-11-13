@@ -31,7 +31,8 @@ export function validationExceptionFactory(
       const names = Object.keys(constraints);
       if (names.length) {
         const root = ROOT_CONSTRAINTS.find((n) => n in constraints);
-        result[error.property] = root
+        // Body không phải object (vd. `[]`) → class-validator báo 'unknownValue' không có property.
+        result[error.property || 'body'] = root
           ? [constraints[root]]
           : [...new Set(names.map((n) => constraints[n]))];
       }
