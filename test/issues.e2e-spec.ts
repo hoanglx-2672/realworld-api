@@ -208,7 +208,9 @@ describe('ISS-20 giới hạn số lần đăng nhập theo IP (e2e)', () => {
     try {
       app = await createTestApp();
     } finally {
-      process.env.LOGIN_THROTTLE_LIMIT = before;
+      // Gán undefined vào process.env sẽ thành chuỗi "undefined" → phải xoá hẳn.
+      if (before === undefined) delete process.env.LOGIN_THROTTLE_LIMIT;
+      else process.env.LOGIN_THROTTLE_LIMIT = before;
     }
   });
   afterAll(() => app.close());
