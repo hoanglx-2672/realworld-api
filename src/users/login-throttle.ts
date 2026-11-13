@@ -5,7 +5,7 @@ import { ThrottlerModule } from '@nestjs/throttler';
  * ISS-20: chặn dò mật khẩu ở POST /api/users/login — mỗi IP tối đa `LOGIN_THROTTLE_LIMIT`
  * lần trong `LOGIN_THROTTLE_TTL_MS` ms; vượt → 429 + header `Retry-After`.
  * Bộ đếm nằm trong RAM của tiến trình: chạy nhiều instance thì cần storage dùng chung (Redis).
- * Sau reverse proxy phải bật `trust proxy`, không thì mọi người dùng chung IP của proxy.
+ * Sau reverse proxy phải đặt `TRUST_PROXY` (main.ts), không thì mọi người dùng chung IP của proxy.
  */
 /**
  * Số nguyên dương từ env; rỗng → mặc định. Sai (0, âm, "ten") thì dừng lúc khởi động:
