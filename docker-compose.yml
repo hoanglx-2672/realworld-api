@@ -8,7 +8,8 @@ services:
       POSTGRES_PASSWORD: ${DB_PASSWORD:-realworld}
       POSTGRES_DB: ${DB_DATABASE:-realworld}
     ports:
-      - '${DB_PORT:-5432}:5432'
+      # Chỉ mở cho máy này: không lộ Postgres (tài khoản mặc định) ra mạng LAN.
+      - '127.0.0.1:${DB_PORT:-5432}:5432'
     volumes:
       - db-data:/var/lib/postgresql/data
 
