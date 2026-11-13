@@ -169,15 +169,18 @@ export class ArticlesService {
       });
     }
 
-    const articlesCount = await filtered.getCount();
-    const page = await filtered
-      .clone()
-      .select('article.id')
-      .orderBy('article.createdAt', 'DESC')
-      .addOrderBy('article.id', 'DESC')
-      .offset(query.offset)
-      .limit(query.limit)
-      .getMany();
+    // Hai truy vấn độc lập → chạy song song (mỗi cái một kết nối trong pool).
+    const [articlesCount, page] = await Promise.all([
+      filtered.getCount(),
+      filtered
+        .clone()
+        .select('article.id')
+        .orderBy('article.createdAt', 'DESC')
+        .addOrderBy('article.id', 'DESC')
+        .offset(query.offset)
+        .limit(query.limit)
+        .getMany(),
+    ]);
     if (!page.length) return { articles: [], articlesCount };
 
     const ids = page.map((a) => a.id);
@@ -232,43 +235,48 @@ export class ArticlesService {
     const authorIds = [...new Set(list.map((a) => a.author.id))];
     const qb = () => this.articles.manager.createQueryBuilder();
 
-    const counts = await qb()
+    const countsQuery = qb()
       .select('f.article_id', 'articleId')
       .addSelect('COUNT(*)::int', 'count')
       .from('favorites', 'f')
       .where('f.article_id IN (:...ids)', { ids })
       .groupBy('f.article_id')
       .getRawMany<{ articleId: number; count: number }>();
+    // Khách: không cần hai truy vấn theo người xem.
+    const favoritedQuery =
+      viewerId === undefined
+        ? Promise.resolve([])
+        : qb()
+            .select('f.article_id', 'articleId')
+            .from('favorites', 'f')
+            .where('f.user_id = :viewerId AND f.article_id IN (:...ids)', {
+              viewerId,
+              ids,
+            })
+            .getRawMany<{ articleId: number }>();
+    const followingQuery =
+      viewerId === undefined
+        ? Promise.resolve([])
+        : qb()
+            .select('fl.following_id', 'userId')
+            .from('follows', 'fl')
+            .where(
+              'fl.follower_id = :viewerId AND fl.following_id IN (:...authorIds)',
+              { viewerId, authorIds },
+            )
+            .getRawMany<{ userId: number }>();
+
+    // Ba truy vấn độc lập → chạy song song.
+    const [counts, favRows, followRows] = await Promise.all([
+      countsQuery,
+      favoritedQuery,
+      followingQuery,
+    ]);
     const countById = new Map(
       counts.map((r) => [Number(r.articleId), r.count]),
     );
-
-    let favorited = new Set<number>();
-    let following = new Set<number>();
-    if (viewerId !== undefined) {
-      const favRows = await qb()
-        .select('f.article_id', 'articleId')
-        .from('favorites', 'f')
-        .where('f.user_id = :viewerId AND f.article_id IN (:...ids)', {
-          viewerId,
-          ids,
-        })
-        .getRawMany<{ articleId: number }>();
-      favorited = new Set(favRows.map((r) => Number(r.articleId)));
-
-      const followRows = await qb()
-        .select('fl.following_id', 'userId')
-        .from('follows', 'fl')
-        .where(
-          'fl.follower_id = :viewerId AND fl.following_id IN (:...authorIds)',
-          {
-            viewerId,
-            authorIds,
-          },
-        )
-        .getRawMany<{ userId: number }>();
-      following = new Set(followRows.map((r) => Number(r.userId)));
-    }
+    const favorited = new Set(favRows.map((r) => Number(r.articleId)));
+    const following = new Set(followRows.map((r) => Number(r.userId)));
 
     return list.map((a) => ({
       favorited: favorited.has(a.id),
