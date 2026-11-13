@@ -20,11 +20,24 @@ type ErrorsBody = { errors: Record<string, string[]> };
 
 /** Lỗi không do mình ném (Nest/Express tự sinh): field + key i18n theo mã trạng thái. */
 const FRAMEWORK_ERRORS: Partial<Record<number, [string, string]>> = {
-  [HttpStatus.BAD_REQUEST]: ['body', 'errors.malformed'], // JSON hỏng
+  // JSON hỏng → 'body'; path sai mã hoá (/api/x/%FF) → 'request' (xem fieldOf)
+  [HttpStatus.BAD_REQUEST]: ['body', 'errors.malformed'],
   [HttpStatus.NOT_FOUND]: ['path', 'errors.notFound'], // route không tồn tại
   [HttpStatus.PAYLOAD_TOO_LARGE]: ['body', 'errors.tooLarge'], // > 100 kB
   [HttpStatus.TOO_MANY_REQUESTS]: ['request', 'errors.tooManyRequests'], // ThrottlerGuard
 };
+
+/**
+ * 400 của framework: SyntaxError (JSON hỏng) và URIError (path kiểu /api/x/%FF) đều thành
+ * BadRequestException giống nhau → phân biệt bằng việc request có gửi body hay không.
+ */
+function fieldOf(status: number, field: string, request: Request): string {
+  if (status !== Number(HttpStatus.BAD_REQUEST)) return field;
+  const length = Number(request.headers['content-length'] ?? 0);
+  return length > 0 || request.headers['transfer-encoding']
+    ? 'body'
+    : 'request';
+}
 
 /** Cùng danh sách và thứ tự với I18nModule trong app.module.ts. */
 const LOCALE_RESOLVERS: LocaleResolver[] = [
@@ -90,7 +103,11 @@ export class AllExceptionsFilter implements ExceptionFilter {
     const known = FRAMEWORK_ERRORS[status];
     if (known) {
       const [field, key] = known;
-      return { errors: { [field]: [this.translate(key, request)] } };
+      return {
+        errors: {
+          [fieldOf(status, field, request)]: [this.translate(key, request)],
+        },
+      };
     }
     const message =
       exception instanceof Error ? exception.message : String(exception);

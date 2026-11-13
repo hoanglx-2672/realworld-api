@@ -1,5 +1,6 @@
 import {
   type ArgumentsHost,
+  BadRequestException,
   HttpStatus,
   Logger,
   NotFoundException,
@@ -90,6 +91,14 @@ describe('AllExceptionsFilter', () => {
       headers: { 'x-lang': 'en', 'accept-language': 'en' },
     });
     expect(body.errors.path[0]).toBe('vi:errors.notFound');
+  });
+
+  it.each([
+    [{ 'content-length': '9' }, 'body'],
+    [{}, 'request'],
+  ])('400 của framework, header %j → field %s', (headers, field) => {
+    const { body } = run(new BadRequestException('x'), { headers });
+    expect(body).toEqual({ errors: { [field]: ['en:errors.malformed'] } });
   });
 
   it('lỗi 4xx thường (không có trong bảng) → không ghi log', () => {
