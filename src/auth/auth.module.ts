@@ -11,8 +11,26 @@ type ExpiresIn = NonNullable<JwtSignOptions['expiresIn']>;
  * Đọc từ env luôn là chuỗi; jsonwebtoken hiểu chuỗi toàn số là **mili giây**
  * ("3600" → 3,6 giây), nên đổi sang number để được giây như người viết .env mong đợi.
  */
-export function parseExpiresIn(value: string): ExpiresIn {
-  return /^\d+$/.test(value) ? Number(value) : (value as ExpiresIn);
+export function parseExpiresIn(value: string | undefined): ExpiresIn {
+  const v = value?.trim() || DEFAULT_EXPIRES_IN; // `JWT_EXPIRES_IN=` rỗng → mặc định
+  if (/^\d+$/.test(v)) return Number(v);
+  if (!/^\d+(\.\d+)?\s*(ms|s|m|h|d|w|y)$/i.test(v)) {
+    // Sai định dạng thì dừng lúc khởi động, không để mọi lần ký token đều 500.
+    throw new Error(
+      `JWT_EXPIRES_IN không hợp lệ: "${v}" (ví dụ 7d, 12h, 3600)`,
+    );
+  }
+  return v as ExpiresIn;
+}
+
+const DEFAULT_EXPIRES_IN = '7d';
+
+/** Rỗng hoặc toàn khoảng trắng cũng là thiếu: không bao giờ ký token bằng secret rỗng. */
+export function requireSecret(value: string | undefined): string {
+  if (!value?.trim()) {
+    throw new Error('Thiếu JWT_SECRET (xem .env.example)');
+  }
+  return value;
 }
 
 /**
@@ -25,10 +43,10 @@ export function parseExpiresIn(value: string): ExpiresIn {
     JwtModule.registerAsync({
       inject: [ConfigService],
       useFactory: (config: ConfigService) => ({
-        // Thiếu JWT_SECRET thì app không khởi động: không bao giờ chạy với secret mặc định.
-        secret: config.getOrThrow<string>('JWT_SECRET'),
+        // Thiếu / rỗng JWT_SECRET thì app không khởi động: không chạy với secret mặc định.
+        secret: requireSecret(config.get<string>('JWT_SECRET')),
         signOptions: {
-          expiresIn: parseExpiresIn(config.get('JWT_EXPIRES_IN', '7d')),
+          expiresIn: parseExpiresIn(config.get<string>('JWT_EXPIRES_IN')),
         },
       }),
     }),
