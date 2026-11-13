@@ -29,7 +29,7 @@ function duoi(out, n = 15) {
   return out.trim().split('\n').slice(-n).join('\n');
 }
 
-if (!existsSync('package.json') || !existsSync('src/database/data-source.ts')) {
+if (!existsSync('package.json') || !existsSync('src')) {
   console.error('Hãy chạy từ thư mục gốc realworld-api.');
   process.exit(2);
 }
@@ -98,6 +98,8 @@ for (const [muc, cmd] of [
 // ---------- 4. Migration khớp entity ----------
 if (args.nhanh) {
   ghi('Migration khớp entity', 'SKIP', '--nhanh');
+} else if (!existsSync('src/database/data-source.ts') || !existsSync('src/database/migrations')) {
+  ghi('Migration khớp entity', 'SKIP', 'chưa có src/database/data-source.ts hoặc thư mục migrations');
 } else if (!chay('docker compose exec -T db pg_isready').ok) {
   ghi('Migration khớp entity', 'FAIL', 'Postgres chưa chạy: npm run db:up rồi chạy lại');
 } else {
