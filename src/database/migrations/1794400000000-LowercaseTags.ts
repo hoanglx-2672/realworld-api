@@ -13,7 +13,7 @@ import { MigrationInterface, QueryRunner } from 'typeorm';
  *
  * Không đảo ngược được: không còn biết tên gốc viết thế nào → down() để trống.
  */
-export const normalizeTagName = (name: string) => name.trim().toLowerCase();
+const normalizeTagName = (name: string) => name.trim().toLowerCase();
 
 export class LowercaseTags1794400000000 implements MigrationInterface {
   name = 'LowercaseTags1794400000000';
