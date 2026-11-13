@@ -15,6 +15,7 @@ import {
   QueryLocaleResolver,
 } from '@nestjs/i18n';
 import type { Request, Response } from 'express';
+import { CACHE_CONTROL_HEADER, NO_STORE } from './no-store.middleware.js';
 
 type ErrorsBody = { errors: Record<string, string[]> };
 
@@ -83,6 +84,8 @@ export class AllExceptionsFilter implements ExceptionFilter {
       );
     }
 
+    // Lỗi body-parser (JSON hỏng, body quá lớn) chạy trước NoStoreMiddleware → đặt lại ở đây.
+    response.setHeader(CACHE_CONTROL_HEADER, NO_STORE);
     response
       .status(status)
       .json(

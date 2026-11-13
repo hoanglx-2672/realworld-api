@@ -21,7 +21,10 @@ const i18n = {
 
 function run(exception: unknown, request: object = {}) {
   const json = vi.fn();
-  const response = { status: vi.fn((_code: number) => ({ json })) };
+  const response = {
+    status: vi.fn((_code: number) => ({ json })),
+    setHeader: vi.fn(),
+  };
   const host = {
     switchToHttp: () => ({
       getRequest: () => ({
@@ -36,6 +39,7 @@ function run(exception: unknown, request: object = {}) {
   } as unknown as ArgumentsHost;
   new AllExceptionsFilter(i18n).catch(exception, host);
   return {
+    headers: Object.fromEntries(response.setHeader.mock.calls),
     status: response.status.mock.calls[0][0],
     body: json.mock.calls[0][0],
   };
@@ -49,9 +53,15 @@ describe('AllExceptionsFilter', () => {
 
   it('lỗi đã đúng dạng {"errors"} → giữ nguyên', () => {
     const body = { errors: { email: ['is invalid'] } };
-    expect(run(new UnprocessableEntityException(body))).toEqual({
+    expect(run(new UnprocessableEntityException(body))).toMatchObject({
       status: 422,
       body,
+    });
+  });
+
+  it('mọi response lỗi có Cache-Control: no-store (kể cả lỗi body-parser, ISS-24)', () => {
+    expect(run(new BadRequestException('x')).headers).toEqual({
+      'Cache-Control': 'no-store',
     });
   });
 
