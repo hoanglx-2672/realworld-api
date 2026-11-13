@@ -29,7 +29,7 @@ export interface ArticleView extends ArticleListItem {
 const sortedTagNames = (article: Article) =>
   (article.tags ?? [])
     .map((t) => t.name)
-    .sort((a, b) => (a < b ? -1 : a > b ? 1 : 0));
+    .sort(); // so theo mã UTF-16, khớp ORDER BY ... COLLATE "C" của GET /tags
 
 export function toArticleListItem(
   article: Article,
