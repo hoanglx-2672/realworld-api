@@ -39,9 +39,9 @@ export class ArticlesService {
    * vừa tạo cũng bị huỷ, không để lại tag mồ côi trong GET /tags.
    */
   async create(authorId: number, dto: CreateArticleDto): Promise<ArticleView> {
-    const slug = await this.retryOnSlugTaken(() =>
+    const article = await this.retryOnSlugTaken(() =>
       this.articles.manager.transaction(async (manager) => {
-        const article = manager.create(Article, {
+        const draft = manager.create(Article, {
           title: dto.title,
           description: dto.description,
           body: dto.body,
@@ -49,10 +49,10 @@ export class ArticlesService {
           slug: uniqueSlug(dto.title),
           tags: await resolveTags(manager, dto.tagList ?? []),
         });
-        return (await manager.save(article)).slug;
+        return loadForView(manager, (await manager.save(draft)).id);
       }),
     );
-    return this.findOne(slug, authorId);
+    return this.toView(article, authorId);
   }
 
   /**
@@ -65,7 +65,7 @@ export class ArticlesService {
     userId: number,
     dto: UpdateArticleDto,
   ): Promise<ArticleView> {
-    const newSlug = await this.retryOnSlugTaken(() =>
+    const updated = await this.retryOnSlugTaken(() =>
       this.articles.manager.transaction(async (manager) => {
         const article = await lockBySlugOrThrow(manager, slug);
         this.assertAuthor(article, userId);
@@ -84,10 +84,10 @@ export class ArticlesService {
           // @UpdateDateColumn không chạy. Đặt tay để updatedAt phản ánh lần sửa.
           article.updatedAt = new Date();
         }
-        return (await manager.save(article)).slug;
+        return loadForView(manager, (await manager.save(article)).id);
       }),
     );
-    return this.findOne(newSlug, userId);
+    return this.toView(updated, userId);
   }
 
   /** DELETE /articles/:slug — chỉ tác giả. Comment, tag, favorite đi theo nhờ FK ON DELETE CASCADE. */
@@ -178,7 +178,13 @@ export class ArticlesService {
 
   /** GET /articles/:slug — `viewerId` undefined khi khách xem. */
   async findOne(slug: string, viewerId?: number): Promise<ArticleView> {
-    const article = await this.findBySlugOrThrow(slug);
+    return this.toView(await this.findBySlugOrThrow(slug), viewerId);
+  }
+
+  private async toView(
+    article: Article,
+    viewerId?: number,
+  ): Promise<ArticleView> {
     const [state] = await this.viewerStates([article], viewerId);
     return toArticleView(article, state);
   }
@@ -257,6 +263,17 @@ const hasNul = (value: string) => value.includes('\u0000');
 
 function throwArticleNotFound(): never {
   throw errorsException(HttpStatus.NOT_FOUND, 'article', 'errors.notFound');
+}
+
+/**
+ * Đọc lại bài vừa ghi **trong cùng transaction**: đọc sau khi commit thì một DELETE chen
+ * vào giữa làm PUT/POST đã ghi thành công vẫn trả 404.
+ */
+function loadForView(manager: EntityManager, id: number): Promise<Article> {
+  return manager.findOneOrFail(Article, {
+    where: { id },
+    relations: { author: true, tags: true },
+  });
 }
 
 /**
