@@ -1,4 +1,3 @@
-import { join } from 'node:path';
 import type { DataSourceOptions } from 'typeorm';
 import { Article } from '../articles/article.entity.js';
 import { Comment } from '../comments/comment.entity.js';
@@ -10,7 +9,7 @@ const REQUIRED_ENV = ['DB_USERNAME', 'DB_PASSWORD', 'DB_DATABASE'] as const;
 /**
  * Cấu hình DB dùng chung cho HAI nơi:
  *  - app Nest (TypeOrmModule.forRootAsync trong app.module.ts)
- *  - TypeORM CLI khi chạy migration (data-source.ts)
+ *  - TypeORM CLI khi chạy migration (data-source.ts, thêm danh sách migration)
  * Để hai bên không bao giờ lệch nhau.
  */
 export function typeOrmOptions(env: NodeJS.ProcessEnv): DataSourceOptions {
@@ -32,8 +31,6 @@ export function typeOrmOptions(env: NodeJS.ProcessEnv): DataSourceOptions {
     database: env.DB_DATABASE,
     logging: env.DB_LOGGING === 'true',
     entities: [User, Article, Comment, Tag],
-    // Chạy từ dist/ nên chỉ lấy file .js đã build.
-    migrations: [join(import.meta.dirname, 'migrations', '*.js')],
     // KHÔNG dùng synchronize: mọi thay đổi bảng phải đi qua migration.
     synchronize: false,
   };

@@ -1,4 +1,5 @@
 import { existsSync } from 'node:fs';
+import { join } from 'node:path';
 import 'reflect-metadata';
 import { DataSource } from 'typeorm';
 import { typeOrmOptions } from './typeorm.options.js';
@@ -9,4 +10,9 @@ import { typeOrmOptions } from './typeorm.options.js';
 if (existsSync('.env')) process.loadEnvFile();
 
 /** Điểm vào cho TypeORM CLI: `typeorm -d dist/database/data-source.js ...` */
-export default new DataSource(typeOrmOptions(process.env));
+// Chỉ CLI cần migration; app không nạp chúng mỗi lần khởi động.
+// Chạy từ dist/ nên chỉ lấy file .js đã build.
+export default new DataSource({
+  ...typeOrmOptions(process.env),
+  migrations: [join(import.meta.dirname, 'migrations', '*.js')],
+});
