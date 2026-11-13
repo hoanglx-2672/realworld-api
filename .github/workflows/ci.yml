@@ -68,6 +68,9 @@ jobs:
       - name: Unit test
         run: npm test
 
+      - name: Build (tsconfig.build.json, như khi deploy)
+        run: npm run build
+
       # Hai bước dưới chỉ chạy khi nhánh đã có schema (từ PR feat/database-schema).
       - name: Migration
         if: hashFiles('src/database/data-source.ts') != ''
