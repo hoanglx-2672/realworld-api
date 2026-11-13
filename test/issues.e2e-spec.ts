@@ -46,17 +46,17 @@ describe('sổ theo dõi vấn đề (e2e)', () => {
     });
 
     it.each([
-      ['?lang=vi', (r: request.Test) => r],
-      ['x-lang: vi', (r: request.Test) => r.set('x-lang', 'vi')],
+      ['?lang=vi', '/api/users/login?lang=vi', {}],
+      ['x-lang: vi', '/api/users/login', { 'x-lang': 'vi' }],
       [
         'Accept-Language: vi-VN',
-        (r: request.Test) => r.set('Accept-Language', 'vi-VN,vi;q=0.9'),
+        '/api/users/login',
+        { 'Accept-Language': 'vi-VN,vi;q=0.9' },
       ],
-    ])('JSON hỏng + %s → câu tiếng Việt', async (name, withLang) => {
-      const base = name.startsWith('?')
-        ? http().post('/api/users/login?lang=vi')
-        : http().post('/api/users/login');
-      const res = await withLang(base)
+    ])('JSON hỏng + %s → câu tiếng Việt', async (_name, url, headers) => {
+      const res = await http()
+        .post(url)
+        .set(headers)
         .set('Content-Type', 'application/json')
         .send('{"user": ')
         .expect(400);
