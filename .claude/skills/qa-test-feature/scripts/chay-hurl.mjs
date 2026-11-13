@@ -38,7 +38,16 @@ if (!existsSync(THU_MUC)) {
   process.exit(2);
 }
 
-const host = (co.host ?? `http://localhost:${process.env.PORT ?? 3000}`).replace(/\/(api)?\/?$/, '');
+// Chỉ nhận URL http(s) và chỉ lấy origin: tránh `--host` rỗng và chặn ký tự shell lọt vào lệnh.
+let host;
+try {
+  const u = new URL(typeof co.host === 'string' ? co.host : `http://localhost:${process.env.PORT ?? 3000}`);
+  if (!/^https?:$/.test(u.protocol)) throw new Error(u.protocol);
+  host = u.origin;
+} catch {
+  console.error(`--host phải là URL http(s), ví dụ --host=http://localhost:3000 (nhận: ${co.host})`);
+  process.exit(2);
+}
 const tenFile = feature === 'all' ? Object.values(BO_TEST).flat() : BO_TEST[feature];
 const files = tenFile.map((f) => join(THU_MUC, `${f}.hurl`));
 
