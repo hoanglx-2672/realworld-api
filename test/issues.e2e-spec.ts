@@ -107,6 +107,13 @@ describe('sổ theo dõi vấn đề (e2e)', () => {
           .expect(200);
       }
       await http().get('/api/user').set(auth(user.token)).expect(200);
+      // Đúng như tên test: mật khẩu mới (64 ký tự) đăng nhập được, mật khẩu cũ thì không.
+      const login = (password: string) =>
+        http()
+          .post('/api/users/login')
+          .send({ user: { email: `${user.username}@test.com`, password } });
+      await login('a'.repeat(64)).expect(200);
+      await login('password123').expect(401);
     });
   });
 
