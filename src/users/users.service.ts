@@ -20,7 +20,8 @@ const BCRYPT_COST = 10;
  * có hay không, kẻ dò không đoán được email nào đã đăng ký qua thời gian phản hồi.
  */
 // Tính sẵn (cost = BCRYPT_COST, mật khẩu ngẫu nhiên đã bỏ): không chặn event loop lúc import.
-const DUMMY_HASH = '$2b$10$hQdrVIjDsLNzdvTVd0ffwOM7dJ/ORlIrI2ydpUhQ/5JwsfRtUq3dC';
+const DUMMY_HASH =
+  '$2b$10$hQdrVIjDsLNzdvTVd0ffwOM7dJ/ORlIrI2ydpUhQ/5JwsfRtUq3dC';
 
 /** Email không phân biệt hoa thường: `Jake@x.com` và `jake@x.com` là một người. */
 export const normalizeEmail = (email: string) => email.trim().toLowerCase();
@@ -83,31 +84,51 @@ export class UsersService {
         user.id,
       );
     }
-    if (dto.username !== undefined) user.username = dto.username;
-    if (email !== undefined) user.email = email;
+    const patch: Partial<User> = {};
+    if (dto.username !== undefined) patch.username = dto.username;
+    if (email !== undefined) patch.email = email;
     // Không thu hồi token cũ khi đổi mật khẩu: bộ test chính thức (errors_auth.hurl:240–261)
     // đổi mật khẩu rồi dùng tiếp token cũ. Xem ISS-03 trong docs/tracker.html.
     if (dto.password !== undefined) {
-      user.password = await hash(dto.password, BCRYPT_COST);
+      patch.password = await hash(dto.password, BCRYPT_COST);
     }
     // bio/image: "" và null đều nghĩa là "xoá" → lưu null.
-    if (dto.bio !== undefined) user.bio = dto.bio || null;
-    if (dto.image !== undefined) user.image = dto.image || null;
+    if (dto.bio !== undefined) patch.bio = dto.bio || null;
+    if (dto.image !== undefined) patch.image = dto.image || null;
 
-    await this.saveOrConflict(user);
-    return toUserView(user, await this.signToken(user));
+    await this.updateOrConflict(user.id, patch);
+    return toUserView(Object.assign(user, patch), await this.signToken(user));
+  }
+
+  /**
+   * UPDATE ... WHERE id (không dùng save): nếu user bị xoá giữa lúc đọc và ghi, save() sẽ
+   * chuyển sang INSERT thiếu password → 500. Ở đây không dòng nào bị sửa → 401 như token hỏng.
+   */
+  private async updateOrConflict(id: number, patch: Partial<User>) {
+    if (!Object.keys(patch).length) return; // PUT {} : không có gì để ghi
+    try {
+      const result = await this.users.update({ id }, patch);
+      if (!result.affected) throw this.tokenInvalid();
+    } catch (error) {
+      const column = uniqueViolationColumn(error);
+      if (column)
+        throw errorsException(HttpStatus.CONFLICT, column, 'errors.taken');
+      throw error;
+    }
+  }
+
+  private tokenInvalid() {
+    return errorsException(
+      HttpStatus.UNAUTHORIZED,
+      'token',
+      'errors.tokenInvalid',
+    );
   }
 
   /** Token hợp lệ nhưng user không còn (đã bị xoá) → coi như token không hợp lệ. */
   private async findByIdOrThrow(id: number): Promise<User> {
     const user = await this.users.findOneBy({ id });
-    if (!user) {
-      throw errorsException(
-        HttpStatus.UNAUTHORIZED,
-        'token',
-        'errors.tokenInvalid',
-      );
-    }
+    if (!user) throw this.tokenInvalid();
     return user;
   }
 
