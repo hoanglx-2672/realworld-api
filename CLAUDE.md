@@ -13,7 +13,7 @@ NestJS 12 (ESM) · TypeScript 6 strict · Node 24 · TypeORM 1.x + PostgreSQL 17
 - `npm run lint` · `npm run format`
 - `npm run migration:generate -- src/database/migrations/<TenPascalCase>` · `migration:run` · `migration:revert` · `migration:show`
 - Cổng trước PR: `node .claude/skills/review-feature/scripts/kiem.mjs` — phải 0 FAIL
-- Test chính thức: `node .claude/skills/qa-test-feature/scripts/chay-hurl.mjs <feature|all> --npx` (app phải đang chạy)
+- Test chính thức: `node .claude/skills/qa-test-feature/scripts/chay-hurl.mjs <feature|all>` (app phải đang chạy; máy chưa có Hurl thì hỏi user trước khi thêm `--npx`)
 
 ## Architecture
 - `src/app.setup.ts` — `configureApp()`: prefix `/api`, `I18nValidationPipe` + `validationExceptionFactory`; dùng chung cho `main.ts` và e2e (`test/support/create-test-app.ts`)
