@@ -1,6 +1,11 @@
 import { HttpStatus, Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { type EntityManager, In, Repository } from 'typeorm';
+import {
+  type EntityManager,
+  type FindOptionsRelations,
+  In,
+  Repository,
+} from 'typeorm';
 import {
   errorsException,
   uniqueViolationColumn,
@@ -106,7 +111,8 @@ export class ArticlesService {
 
   /** DELETE /articles/:slug — chỉ tác giả. Comment, tag, favorite đi theo nhờ FK ON DELETE CASCADE. */
   async remove(slug: string, userId: number): Promise<void> {
-    const article = await this.findBySlugOrThrow(slug);
+    // Chỉ cần author để kiểm quyền: không nạp tags.
+    const article = await this.findBySlugOrThrow(slug, { author: true });
     this.assertAuthor(article, userId);
     await this.articles.delete({ id: article.id });
   }
@@ -203,13 +209,13 @@ export class ArticlesService {
     return toArticleView(article, state);
   }
 
-  private async findBySlugOrThrow(slug: string): Promise<Article> {
+  private async findBySlugOrThrow(
+    slug: string,
+    relations: FindOptionsRelations<Article> = { author: true, tags: true },
+  ): Promise<Article> {
     const article = hasNul(slug)
       ? null
-      : await this.articles.findOne({
-          where: { slug },
-          relations: { author: true, tags: true },
-        });
+      : await this.articles.findOne({ where: { slug }, relations });
     return article ?? throwArticleNotFound();
   }
 
