@@ -12,12 +12,16 @@ export class TagsService {
    * xoá, hoặc bị gỡ tag) vẫn nằm trong bảng `tags` để dùng lại, nhưng không hiện ra.
    */
   async findAllNames(): Promise<string[]> {
+    // JOIN theo quan hệ Tag.articles: tên bảng nối / cột lấy từ metadata của entity,
+    // không viết tay trong SQL (đổi @JoinTable thì truy vấn vẫn đúng).
     const rows = await this.tags
       .createQueryBuilder('tag')
       .select('tag.name', 'name')
-      .where('EXISTS (SELECT 1 FROM article_tags at WHERE at.tag_id = tag.id)')
-      .orderBy('tag.name', 'ASC')
+      .innerJoin('tag.articles', 'article')
+      .groupBy('tag.id')
       .getRawMany<{ name: string }>();
-    return rows.map((row) => row.name);
+    // Sắp ở JS, cùng cách với tagList của article (so theo mã ký tự): ORDER BY của
+    // Postgres theo collation của DB (en_US bỏ qua "-": "cats" trước "c-sharp").
+    return rows.map((row) => row.name).sort();
   }
 }
