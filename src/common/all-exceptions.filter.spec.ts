@@ -1,6 +1,7 @@
 import {
   type ArgumentsHost,
   BadRequestException,
+  ForbiddenException,
   HttpStatus,
   Logger,
   NotFoundException,
@@ -99,6 +100,14 @@ describe('AllExceptionsFilter', () => {
   ])('400 của framework, header %j → field %s', (headers, field) => {
     const { body } = run(new BadRequestException('x'), { headers });
     expect(body).toEqual({ errors: { [field]: ['en:errors.malformed'] } });
+  });
+
+  it('4xx khác của framework (403 mặc định) → câu chung đã dịch, không lộ câu tiếng Anh gốc', () => {
+    const { status, body } = run(new ForbiddenException(), {
+      query: { lang: 'vi' },
+    });
+    expect(status).toBe(403);
+    expect(body).toEqual({ errors: { request: ['vi:errors.requestInvalid'] } });
   });
 
   it('lỗi 4xx thường (không có trong bảng) → không ghi log', () => {

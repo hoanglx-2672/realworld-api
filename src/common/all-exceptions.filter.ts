@@ -109,9 +109,11 @@ export class AllExceptionsFilter implements ExceptionFilter {
         },
       };
     }
-    const message =
-      exception instanceof Error ? exception.message : String(exception);
-    return { errors: { request: [message] } };
+    // 4xx khác của framework (403 mặc định, 415 charset của body-parser...): câu tiếng Anh gốc
+    // không qua i18n → thay bằng câu chung đã dịch.
+    return {
+      errors: { request: [this.translate('errors.requestInvalid', request)] },
+    };
   }
 
   /**

@@ -8,5 +8,6 @@
   "malformed": "is malformed",
   "tooLarge": "is too large",
   "internal": "internal server error",
-  "tooManyRequests": "too many attempts, try again later"
+  "tooManyRequests": "too many attempts, try again later",
+  "requestInvalid": "is invalid"
 }

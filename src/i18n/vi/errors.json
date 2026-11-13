@@ -8,5 +8,6 @@
   "malformed": "sai định dạng",
   "tooLarge": "quá lớn",
   "internal": "lỗi máy chủ",
-  "tooManyRequests": "thử quá nhiều lần, vui lòng thử lại sau"
+  "tooManyRequests": "thử quá nhiều lần, vui lòng thử lại sau",
+  "requestInvalid": "không hợp lệ"
 }
