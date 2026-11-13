@@ -17,6 +17,7 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { AllExceptionsFilter } from './common/all-exceptions.filter.js';
 import { NoStoreMiddleware } from './common/no-store.middleware.js';
 import { typeOrmOptions } from './database/typeorm.options.js';
+import { UsersModule } from './users/users.module.js';
 
 @Module({
   imports: [
@@ -42,6 +43,8 @@ import { typeOrmOptions } from './database/typeorm.options.js';
         defaultLocale: config.get('DEFAULT_LOCALE', 'en'),
       }),
     }),
+
+    UsersModule,
   ],
   providers: [
     // Filter toàn cục đăng ký qua DI (không dùng app.useGlobalFilters) để tiêm được
