@@ -1,0 +1,101 @@
+# CI: chạy lại cổng kiểm của .claude/skills/review-feature/scripts/kiem.mjs trên GitHub
+# cho mỗi PR và mỗi lần push lên master (trừ SunLint: cần cài global, vẫn chạy ở máy).
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [master]
+
+concurrency:
+  group: ci-${{ github.ref }}
+  # Push mới vào PR thì bỏ run cũ; trên master thì merge nào cũng phải có kết quả đủ.
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    services:
+      db:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_USER: realworld
+          POSTGRES_PASSWORD: realworld
+          POSTGRES_DB: realworld
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U realworld"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+
+    env:
+      DB_HOST: localhost
+      DB_PORT: 5432
+      DB_USERNAME: realworld
+      DB_PASSWORD: realworld
+      DB_DATABASE: realworld
+      DEFAULT_LOCALE: en
+      # Chỉ dùng cho DB tạm của CI, không phải secret thật.
+      JWT_SECRET: ci-only-secret-not-used-anywhere-else-0123456789
+      JWT_EXPIRES_IN: 7d
+
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0 # cần lịch sử base để so migration
+
+      # Các kiểm vệ sinh của kiem.mjs: phải chạy phía server, không trông vào máy dev.
+      - name: Không commit .env
+        run: '! git ls-files --error-unmatch .env 2>/dev/null'
+
+      - name: Không có synchronize true
+        run: '! grep -rnE "synchronize:[[:space:]]*true" src'
+
+      - name: Không sửa/xoá migration đã có trên base
+        if: github.event_name == 'pull_request'
+        run: |
+          changed=$(git diff --name-status --diff-filter=MDR "origin/${{ github.base_ref }}...HEAD" -- src/database/migrations)
+          if [ -n "$changed" ]; then echo "Tạo migration MỚI thay vì sửa:"; echo "$changed"; exit 1; fi
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 24
+          cache: npm
+
+      - run: npm ci
+
+      - name: Lint (oxlint)
+        run: npm run lint
+
+      - name: Format (Prettier)
+        run: npm run format:check
+
+      - name: Typecheck
+        run: npx tsc --noEmit -p tsconfig.json
+
+      - name: Unit test
+        run: npm test
+
+      - name: Build (tsconfig.build.json, như khi deploy)
+        run: npm run build
+
+      # Hai bước dưới chỉ chạy khi nhánh đã có schema (từ PR feat/database-schema).
+      - name: Migration
+        if: hashFiles('src/database/data-source.ts') != ''
+        run: npm run migration:run
+
+      - name: Migration khớp entity
+        if: hashFiles('src/database/data-source.ts') != ''
+        # --check: thoát lỗi nếu entity đổi mà chưa có migration; không ghi file.
+        run: npx typeorm migration:generate -d dist/database/data-source.js --check src/database/migrations/CiCheck
+
+      - name: E2E test
+        if: hashFiles('test/**/*.e2e-spec.ts') != ''
+        run: npm run test:e2e
