@@ -141,6 +141,7 @@ if (!chay('sunlint --version').ok) {
   ghi('Sunlint', 'FAIL', 'chưa cài — guideline bắt buộc. Cài: npm install -g @sun-asterisk/sunlint');
 } else {
   mkdirSync('.reports', { recursive: true });
+  rmSync('.reports/sunlint.json', { force: true }); // không đọc nhầm kết quả lần trước
   const pham = laGit ? '--changed-files ' : '';
   const r = chay(`sunlint --all ${pham}--input=src --output-summary=.reports/sunlint.json`);
   let tom = '';
