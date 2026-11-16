@@ -12,7 +12,10 @@ async function bootstrap() {
   // SIGTERM/SIGINT (docker stop, Ctrl+C) → gọi onModuleDestroy: đóng kết nối DB gọn gàng.
   app.enableShutdownHooks();
   // `||` thay vì `??`: `.env` có dòng `PORT=` (rỗng) thì vẫn dùng cổng mặc định.
-  await app.listen(config.get<string>('PORT') || DEFAULT_PORT);
+  const port = config.get<string>('PORT') || DEFAULT_PORT;
+  // HOST rỗng: nghe mọi địa chỉ, giống khi không truyền host.
+  const host = config.get<string>('HOST')?.trim();
+  await (host ? app.listen(port, host) : app.listen(port));
   new Logger('Bootstrap').log(`API: ${await app.getUrl()}/api`);
 }
 await bootstrap();
