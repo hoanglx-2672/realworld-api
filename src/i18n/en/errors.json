@@ -1,0 +1,13 @@
+{
+  "taken": "has already been taken",
+  "invalid": "invalid",
+  "tokenMissing": "is missing",
+  "tokenInvalid": "is invalid",
+  "notFound": "not found",
+  "forbidden": "forbidden",
+  "malformed": "is malformed",
+  "tooLarge": "is too large",
+  "internal": "internal server error",
+  "tooManyRequests": "too many attempts, try again later",
+  "requestInvalid": "is invalid"
+}

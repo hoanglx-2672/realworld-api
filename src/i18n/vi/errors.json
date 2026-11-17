@@ -1,0 +1,13 @@
+{
+  "taken": "đã có người dùng",
+  "invalid": "không đúng",
+  "tokenMissing": "bị thiếu",
+  "tokenInvalid": "không hợp lệ",
+  "notFound": "không tìm thấy",
+  "forbidden": "không có quyền",
+  "malformed": "sai định dạng",
+  "tooLarge": "quá lớn",
+  "internal": "lỗi máy chủ",
+  "tooManyRequests": "thử quá nhiều lần, vui lòng thử lại sau",
+  "requestInvalid": "không hợp lệ"
+}
