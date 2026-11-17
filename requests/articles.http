@@ -1,0 +1,87 @@
+### =========================================================
+### Test tay: Articles (REST Client trong VS Code)
+### Chạy lần lượt từ trên xuống. App phải đang chạy: npm run db:up && npm run start:dev
+### Cần user: chạy request 1–2 trong auth.http trước (hoặc sửa @email/@password dưới đây).
+### =========================================================
+
+@host = http://localhost:3000/api
+@email = jake@example.com
+@password = jakejake123
+
+### 0. Đăng nhập lấy token
+# @name login
+POST {{host}}/users/login
+Content-Type: application/json
+
+{ "user": { "email": "{{email}}", "password": "{{password}}" } }
+
+###
+@token = {{login.response.body.user.token}}
+
+### 1. Tạo bài (title tiếng Việt → slug không dấu) → 201
+# @name create
+POST {{host}}/articles
+Authorization: Token {{token}}
+Content-Type: application/json
+
+{
+  "article": {
+    "title": "Học NestJS từ đầu",
+    "description": "Ghi chép khi làm RealWorld",
+    "body": "Module, Controller, Provider...",
+    "tagList": ["nestjs", "typeorm"]
+  }
+}
+
+###
+@slug = {{create.response.body.article.slug}}
+
+### 2. Xem bài (không cần token) → 200
+GET {{host}}/articles/{{slug}}
+
+### 3. Danh sách mới nhất (phần tử KHÔNG có body) → 200
+GET {{host}}/articles?limit=5
+
+### 4. Lọc theo tag / tác giả, phân trang
+GET {{host}}/articles?tag=nestjs&limit=2&offset=0
+
+### 5. Sửa body → slug giữ nguyên, updatedAt đổi
+PUT {{host}}/articles/{{slug}}
+Authorization: Token {{token}}
+Content-Type: application/json
+
+{ "article": { "body": "Đã cập nhật nội dung" } }
+
+### 6. Xoá hết tag bằng mảng rỗng
+PUT {{host}}/articles/{{slug}}
+Authorization: Token {{token}}
+Content-Type: application/json
+
+{ "article": { "tagList": [] } }
+
+### =========================================================
+### Case lỗi
+### =========================================================
+
+### 7. Tạo thiếu title → 422 "can't be blank" (thử thêm ?lang=vi)
+POST {{host}}/articles?lang=vi
+Authorization: Token {{token}}
+Content-Type: application/json
+
+{ "article": { "title": "", "description": "d", "body": "b" } }
+
+### 8. Tạo không token → 401
+POST {{host}}/articles
+Content-Type: application/json
+
+{ "article": { "title": "t", "description": "d", "body": "b" } }
+
+### 9. Slug không tồn tại → 404 "not found"
+GET {{host}}/articles/khong-co-bai-nay
+
+### 10. limit sai → 422
+GET {{host}}/articles?limit=0
+
+### 11. Xoá bài → 204 (chạy cuối; sau đó request 2 sẽ ra 404)
+DELETE {{host}}/articles/{{slug}}
+Authorization: Token {{token}}

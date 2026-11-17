@@ -8,6 +8,7 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 import { APP_FILTER } from '@nestjs/core';
 import { I18nModule, JsonI18nLoader } from '@nestjs/i18n';
 import { TypeOrmModule } from '@nestjs/typeorm';
+import { ArticlesModule } from './articles/articles.module.js';
 import { AllExceptionsFilter } from './common/all-exceptions.filter.js';
 import { LOCALE_RESOLVERS } from './common/constants/i18n.constants.js';
 import { defaultLocaleFrom } from './common/utils/i18n.util.js';
@@ -36,6 +37,7 @@ import { UsersModule } from './users/users.module.js';
     }),
 
     UsersModule,
+    ArticlesModule,
   ],
   providers: [
     // Filter toàn cục đăng ký qua DI (không dùng app.useGlobalFilters) để tiêm được
