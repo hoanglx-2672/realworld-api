@@ -1,0 +1,17 @@
+name: realworld-api
+
+services:
+  db:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_USER: ${DB_USERNAME:-realworld}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-realworld}
+      POSTGRES_DB: ${DB_DATABASE:-realworld}
+    ports:
+      # Chỉ mở cho máy này: không lộ Postgres (tài khoản mặc định) ra mạng LAN.
+      - '127.0.0.1:${DB_PORT:-5432}:5432'
+    volumes:
+      - db-data:/var/lib/postgresql/data
+
+volumes:
+  db-data:
