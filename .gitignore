@@ -1,7 +1,9 @@
 node_modules
 dist
 coverage
-.env
+# Mọi file env (.env, .env.local, .env.production...) trừ bản mẫu
+.env*
+!.env.example
 *.tsbuildinfo
 .reports
 

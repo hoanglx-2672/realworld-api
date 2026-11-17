@@ -1,5 +1,5 @@
-# CI: lint, format, typecheck, unit test, build, migration và e2e cho mỗi PR
-# và mỗi lần push lên master (SunLint cần cài global nên chạy ở máy).
+# CI: lint, format, SunLint, typecheck, unit test, build, migration và e2e cho mỗi PR
+# và mỗi lần push lên master.
 name: CI
 
 on:
@@ -8,8 +8,10 @@ on:
     branches: [master]
 
 concurrency:
-  group: ci-${{ github.ref }}
-  # Push mới vào PR thì bỏ run cũ; trên master thì merge nào cũng phải có kết quả đủ.
+  # PR: một nhóm cho mỗi PR, push mới thì bỏ run cũ.
+  # master: mỗi commit một nhóm riêng. Dùng chung nhóm thì GitHub chỉ giữ một run đang
+  # chờ, merge liên tiếp sẽ huỷ run ở giữa dù cancel-in-progress là false.
+  group: ci-${{ github.event_name == 'pull_request' && github.ref || github.sha }}
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 permissions:
@@ -52,16 +54,26 @@ jobs:
           fetch-depth: 0 # cần lịch sử base để so migration
 
       # Các kiểm vệ sinh của kiem.mjs: phải chạy phía server, không trông vào máy dev.
-      - name: Không commit .env
-        run: '! git ls-files --error-unmatch .env 2>/dev/null'
+      - name: Không commit file .env (trừ .env.example)
+        run: |
+          files=$(git ls-files -- ':(glob)**/.env*' ':(exclude,glob)**/.env.example')
+          if [ -n "$files" ]; then echo "File env không được commit:"; echo "$files"; exit 1; fi
 
       - name: Không có synchronize true
-        run: '! grep -rnE "synchronize:[[:space:]]*true" src'
+        run: |
+          # grep: 0 = tìm thấy (sai), 1 = không thấy (đúng), khác = grep lỗi (không coi là qua).
+          rc=0
+          grep -rnE "synchronize:[[:space:]]*true" src || rc=$?
+          if [ "$rc" -eq 0 ]; then echo "Dùng migration thay cho synchronize: true"; exit 1; fi
+          if [ "$rc" -ne 1 ]; then echo "grep lỗi (mã $rc)"; exit "$rc"; fi
 
       - name: Không sửa/xoá migration đã có trên base
         if: github.event_name == 'pull_request'
+        env:
+          # Truyền qua env, không dán ${{ }} thẳng vào script (tránh chèn lệnh qua tên nhánh).
+          BASE_REF: ${{ github.base_ref }}
         run: |
-          changed=$(git diff --name-status --diff-filter=MDR "origin/${{ github.base_ref }}...HEAD" -- src/database/migrations)
+          changed=$(git diff --name-status --diff-filter=MDR "origin/$BASE_REF...HEAD" -- src/database/migrations)
           if [ -n "$changed" ]; then echo "Tạo migration MỚI thay vì sửa:"; echo "$changed"; exit 1; fi
 
       - uses: actions/setup-node@v5
@@ -77,6 +89,9 @@ jobs:
       - name: Format (Prettier)
         run: npm run format:check
 
+      - name: SunLint
+        run: npm run sunlint
+
       - name: Typecheck
         run: npx tsc --noEmit -p tsconfig.json
 
@@ -87,9 +102,14 @@ jobs:
         run: npm run build
 
       # Hai bước dưới chỉ chạy khi nhánh đã có schema (từ PR feat/database-schema).
-      - name: Migration
+      # Gọi thẳng typeorm trên dist vừa build (npm run migration:* sẽ build lại lần nữa).
+      # run → revert → run: thử cả down() của migration mới nhất.
+      - name: Migration (run, revert, run)
         if: hashFiles('src/database/data-source.ts') != ''
-        run: npm run migration:run
+        run: |
+          npx typeorm migration:run -d dist/database/data-source.js
+          npx typeorm migration:revert -d dist/database/data-source.js
+          npx typeorm migration:run -d dist/database/data-source.js
 
       - name: Migration khớp entity
         if: hashFiles('src/database/data-source.ts') != ''
