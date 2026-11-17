@@ -14,6 +14,7 @@ import { LOCALE_RESOLVERS } from './common/constants/i18n.constants.js';
 import { defaultLocaleFrom } from './common/utils/i18n.util.js';
 import { NoStoreMiddleware } from './common/no-store.middleware.js';
 import { typeOrmOptions } from './database/typeorm.options.js';
+import { TagsModule } from './tags/tags.module.js';
 import { UsersModule } from './users/users.module.js';
 
 @Module({
@@ -38,6 +39,7 @@ import { UsersModule } from './users/users.module.js';
 
     UsersModule,
     ArticlesModule,
+    TagsModule,
   ],
   providers: [
     // Filter toàn cục đăng ký qua DI (không dùng app.useGlobalFilters) để tiêm được
