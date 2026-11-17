@@ -13,6 +13,7 @@ import { LOCALE_RESOLVERS } from './common/constants/i18n.constants.js';
 import { defaultLocaleFrom } from './common/utils/i18n.util.js';
 import { NoStoreMiddleware } from './common/no-store.middleware.js';
 import { typeOrmOptions } from './database/typeorm.options.js';
+import { UsersModule } from './users/users.module.js';
 
 @Module({
   imports: [
@@ -33,6 +34,8 @@ import { typeOrmOptions } from './database/typeorm.options.js';
         defaultLocale: defaultLocaleFrom(config.get<string>('DEFAULT_LOCALE')),
       }),
     }),
+
+    UsersModule,
   ],
   providers: [
     // Filter toàn cục đăng ký qua DI (không dùng app.useGlobalFilters) để tiêm được
