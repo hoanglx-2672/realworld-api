@@ -8,10 +8,8 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 import { APP_FILTER } from '@nestjs/core';
 import { I18nModule, JsonI18nLoader } from '@nestjs/i18n';
 import { AllExceptionsFilter } from './common/all-exceptions.filter.js';
-import {
-  DEFAULT_LOCALE,
-  LOCALE_RESOLVERS,
-} from './common/constants/i18n.constants.js';
+import { LOCALE_RESOLVERS } from './common/constants/i18n.constants.js';
+import { defaultLocaleFrom } from './common/utils/i18n.util.js';
 import { NoStoreMiddleware } from './common/no-store.middleware.js';
 
 @Module({
@@ -25,7 +23,7 @@ import { NoStoreMiddleware } from './common/no-store.middleware.js';
       resolvers: LOCALE_RESOLVERS,
       inject: [ConfigService],
       useFactory: (config: ConfigService) => ({
-        defaultLocale: config.get<string>('DEFAULT_LOCALE') || DEFAULT_LOCALE,
+        defaultLocale: defaultLocaleFrom(config.get<string>('DEFAULT_LOCALE')),
       }),
     }),
   ],

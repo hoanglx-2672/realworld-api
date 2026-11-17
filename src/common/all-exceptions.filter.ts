@@ -49,13 +49,19 @@ export class AllExceptionsFilter implements ExceptionFilter {
       );
     }
 
+    // Lỗi xảy ra khi response đã gửi một phần: không ghi thêm được nữa (setHeader sẽ ném
+    // ERR_HTTP_HEADERS_SENT và che mất lỗi gốc) → chỉ log ở trên rồi dừng.
+    if (response.headersSent) return;
+
     // Lỗi body-parser (JSON hỏng, body quá lớn) chạy trước NoStoreMiddleware → đặt lại ở đây.
     response.setHeader(CACHE_CONTROL_HEADER, NO_STORE);
-    response
-      .status(status)
-      .json(
-        isErrorsBody(raw) ? raw : this.toErrorsBody(status, exception, request),
-      );
+    // Body `errors` tự dựng chỉ giữ nguyên với lỗi 4xx; 5xx luôn trả câu chung để không lộ
+    // chi tiết bên trong (vd. detail của DB) ra ngoài.
+    const body =
+      status < HttpStatus.INTERNAL_SERVER_ERROR && isErrorsBody(raw)
+        ? raw
+        : this.toErrorsBody(status, exception, request);
+    response.status(status).json(body);
   }
 
   private toErrorsBody(

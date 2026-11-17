@@ -168,7 +168,8 @@ I18nModule.forRootAsync({
   ],
   inject: [ConfigService],
   useFactory: (config: ConfigService) => ({
-    defaultLocale: config.get('DEFAULT_LOCALE', 'en'),
+    // Ghi sai (vd. 'fr', chưa có thư mục dịch) thì báo lỗi ngay khi khởi động
+    defaultLocale: defaultLocaleFrom(config.get('DEFAULT_LOCALE')),
   }),
 })
 ```
