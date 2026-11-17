@@ -4,3 +4,11 @@ coverage
 .env
 *.tsbuildinfo
 .reports
+
+# Tài liệu và cấu hình agent chỉ giữ ở máy
+CLAUDE.md
+AGENTS.md
+.claude/
+docs/*.html
+docs/realworld-spec/
+docs/features/
