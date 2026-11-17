@@ -1,0 +1,19 @@
+{
+  "isDefined": "can't be blank",
+  "isNotEmpty": "can't be blank",
+  "isString": "is invalid",
+  "isEmail": "is invalid",
+  "minLength": "is too short (minimum is {constraint1} characters)",
+  "maxLength": "is too long (maximum is {constraint1} characters)",
+  "isObject": "is invalid",
+  "nestedValidation": "is invalid",
+  "matches": "is invalid",
+  "isByteLength": "is too long (maximum is {constraint2} bytes)",
+  "isArray": "is invalid",
+  "arrayMaxSize": "is too long (maximum is {constraint1} items)",
+  "isInt": "must be an integer",
+  "min": "must be greater than or equal to {constraint1}",
+  "max": "must be less than or equal to {constraint1}",
+  "isUrl": "is invalid",
+  "unknownValue": "is invalid"
+}
