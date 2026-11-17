@@ -1,19 +1,7 @@
 import { UnprocessableEntityException } from '@nestjs/common';
 import type { ValidationError } from 'class-validator';
-
-/**
- * Lỗi "gốc", theo thứ tự ưu tiên: khi một cái hỏng thì chỉ trả câu của nó, vì các
- * lỗi còn lại chỉ là hệ quả (username = 123 → `is too long` vô nghĩa).
- * Spec: field trống → đúng một câu `can't be blank` (bộ test kiểm `[0]`).
- */
-const ROOT_CONSTRAINTS = [
-  'isDefined',
-  'isNotEmpty',
-  'isObject',
-  'isArray',
-  'isString',
-  'isInt',
-];
+import { ROOT_CONSTRAINTS } from './constants/error.constants.js';
+import type { ErrorsBody } from './types/errors-body.type.js';
 
 /**
  * Đổi lỗi class-validator (đã được I18nValidationPipe dịch) sang định dạng spec:
@@ -23,7 +11,7 @@ const ROOT_CONSTRAINTS = [
 export function validationExceptionFactory(
   errors: ValidationError[],
 ): UnprocessableEntityException {
-  const result: Record<string, string[]> = {};
+  const result: ErrorsBody['errors'] = {};
 
   const collect = (list: ValidationError[]) => {
     for (const error of list) {

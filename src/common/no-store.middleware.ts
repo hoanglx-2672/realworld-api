@@ -1,8 +1,6 @@
 import { Injectable, type NestMiddleware } from '@nestjs/common';
 import type { NextFunction, Request, Response } from 'express';
-
-export const CACHE_CONTROL_HEADER = 'Cache-Control';
-export const NO_STORE = 'no-store';
+import { CACHE_CONTROL_HEADER, NO_STORE } from './constants/http.constants.js';
 
 /**
  * Response của API chứa dữ liệu riêng (token, email, bài nháp...): cấm trình duyệt

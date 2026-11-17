@@ -1,6 +1,7 @@
 import { HttpException, HttpStatus } from '@nestjs/common';
 import { t } from '@nestjs/i18n';
 import { QueryFailedError } from 'typeorm';
+import { PG_UNIQUE_VIOLATION } from './constants/error.constants.js';
 
 /**
  * Lỗi theo định dạng spec RealWorld: {"errors": {"<field>": ["<câu đã dịch>"]}}.
@@ -13,9 +14,6 @@ export function errorsException(
 ): HttpException {
   return new HttpException({ errors: { [field]: [t(key)] } }, status);
 }
-
-/** Mã lỗi Postgres khi vi phạm ràng buộc unique. */
-const PG_UNIQUE_VIOLATION = '23505';
 
 /**
  * Nếu `error` là lỗi unique của Postgres thì trả tên cột bị trùng

@@ -3,8 +3,7 @@ import { ConfigService } from '@nestjs/config';
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module.js';
 import { configureApp } from './app.setup.js';
-
-const DEFAULT_PORT = 3000;
+import { DEFAULT_PORT } from './common/constants/app.constants.js';
 
 async function bootstrap() {
   const app = configureApp(await NestFactory.create(AppModule));

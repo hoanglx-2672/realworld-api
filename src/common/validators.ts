@@ -8,6 +8,7 @@ import {
   ValidateNested,
   type ValidationOptions,
 } from 'class-validator';
+import { normalizeTag } from './utils/tag.util.js';
 
 /** Cắt khoảng trắng đầu/cuối của chuỗi; `"   "` thành `""` để @IsNotEmpty bắt được. */
 export const Trim = () =>
@@ -33,13 +34,6 @@ export const Wrapped = (type: () => new () => object) =>
  */
 export const IfPresent = () =>
   ValidateIf((_object, value) => value !== undefined);
-
-/**
- * Chuẩn hoá tên tag: cắt khoảng trắng + chữ thường, để "NestJS" và "nestjs" là một tag (ISS-21).
- * Dùng cho cả tagList khi ghi và `?tag=` khi lọc, nên lọc không phân biệt hoa thường.
- */
-const normalizeTag = (v: unknown): unknown =>
-  typeof v === 'string' ? v.trim().toLowerCase() : v;
 
 /** Một tag (query `?tag=`). */
 export const TagName = () =>

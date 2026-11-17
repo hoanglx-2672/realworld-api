@@ -6,14 +6,12 @@ import {
 } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { APP_FILTER } from '@nestjs/core';
-import {
-  AcceptLanguageLocaleResolver,
-  HeaderLocaleResolver,
-  I18nModule,
-  JsonI18nLoader,
-  QueryLocaleResolver,
-} from '@nestjs/i18n';
+import { I18nModule, JsonI18nLoader } from '@nestjs/i18n';
 import { AllExceptionsFilter } from './common/all-exceptions.filter.js';
+import {
+  DEFAULT_LOCALE,
+  LOCALE_RESOLVERS,
+} from './common/constants/i18n.constants.js';
 import { NoStoreMiddleware } from './common/no-store.middleware.js';
 
 @Module({
@@ -24,15 +22,10 @@ import { NoStoreMiddleware } from './common/no-store.middleware.js';
     // 2. Đa ngôn ngữ. File dịch nằm ở src/i18n/<locale>/<namespace>.json
     I18nModule.forRootAsync({
       loader: new JsonI18nLoader({ path: join(import.meta.dirname, 'i18n') }),
-      // Thử lần lượt, cái nào tìm được ngôn ngữ hỗ trợ trước thì thắng.
-      resolvers: [
-        new QueryLocaleResolver('lang'), //     ?lang=vi
-        new HeaderLocaleResolver('x-lang'), //  x-lang: vi
-        new AcceptLanguageLocaleResolver(), //  Accept-Language: vi-VN,vi;q=0.9
-      ],
+      resolvers: LOCALE_RESOLVERS,
       inject: [ConfigService],
       useFactory: (config: ConfigService) => ({
-        defaultLocale: config.get('DEFAULT_LOCALE', 'en'),
+        defaultLocale: config.get<string>('DEFAULT_LOCALE') || DEFAULT_LOCALE,
       }),
     }),
   ],
