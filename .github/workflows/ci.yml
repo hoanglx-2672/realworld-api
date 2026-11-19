@@ -1,5 +1,5 @@
-# CI: lint, format, SunLint, typecheck, unit test, build, migration và e2e cho mỗi PR
-# và mỗi lần push lên master.
+# CI: lint, format, SunLint, typecheck, unit test, build, migration, e2e và bộ API test
+# chính thức của RealWorld (Hurl) cho mỗi PR và mỗi lần push lên master.
 name: CI
 
 on:
@@ -53,7 +53,7 @@ jobs:
         with:
           fetch-depth: 0 # cần lịch sử base để so migration
 
-      # Các kiểm vệ sinh của kiem.mjs: phải chạy phía server, không trông vào máy dev.
+      # Các bước kiểm vệ sinh repo: chạy phía server, không trông vào máy dev.
       - name: Không commit file .env (trừ .env.example)
         run: |
           files=$(git ls-files -- ':(glob)**/.env*' ':(exclude,glob)**/.env.example')
@@ -119,3 +119,49 @@ jobs:
       - name: E2E test
         if: hashFiles('test/**/*.e2e-spec.ts') != ''
         run: npm run test:e2e
+
+      # Bộ API test chính thức của RealWorld (Hurl), chạy với app thật trên DB đã migrate.
+      # Ghim commit của spec và phiên bản Hurl (kèm sha256) để kết quả không tự đổi theo upstream.
+      # Chỉ chạy file của feature đã làm; làm thêm feature thì thêm tên file vào SPEC_FILES:
+      # feed cần follow, errors_articles và favorites cần favorite, comments, errors_comments
+      # và errors_authorization cần comment, profiles và errors_profiles cần profile.
+      - name: RealWorld API spec (Hurl)
+        env:
+          HURL_VERSION: 8.1.0
+          HURL_DEB_SHA256: c56222c8923d3940533ac3d7085f66cb6fa6c05639f33aaeef8d857ab70622f9
+          SPEC_REPO: realworld-apps/realworld
+          SPEC_SHA: 25588846c314b15a5e427ffe816e6b4af7be68c7
+          SPEC_FILES: auth errors_auth articles pagination tags
+          # Bộ spec đăng nhập nhiều lần từ cùng IP: nới giới hạn login (ISS-20) cho app chạy thử.
+          LOGIN_THROTTLE_LIMIT: '1000'
+        run: |
+          deb="hurl_${HURL_VERSION}_amd64.deb"
+          curl -fsSL -o "$RUNNER_TEMP/$deb" \
+            "https://github.com/Orange-OpenSource/hurl/releases/download/$HURL_VERSION/$deb"
+          echo "$HURL_DEB_SHA256  $RUNNER_TEMP/$deb" | sha256sum -c -
+          sudo apt-get install -y -qq "$RUNNER_TEMP/$deb" > /dev/null
+          hurl --version
+
+          spec="$RUNNER_TEMP/realworld-spec"
+          mkdir -p "$spec"
+          for f in $SPEC_FILES; do
+            curl -fsSL -o "$spec/$f.hurl" \
+              "https://raw.githubusercontent.com/$SPEC_REPO/$SPEC_SHA/specs/api/hurl/$f.hurl"
+          done
+
+          node dist/main.js > "$RUNNER_TEMP/app.log" 2>&1 &
+          for _ in $(seq 1 30); do
+            curl -s -o /dev/null http://localhost:3000/api/user && break
+            sleep 1
+          done
+
+          rc=0
+          hurl --test --jobs 1 --error-format long \
+            --variable host=http://localhost:3000 \
+            --variable "uid=$(date +%s)$$" \
+            "$spec"/*.hurl || rc=$?
+          if [ "$rc" -ne 0 ]; then
+            echo "--- 100 dòng cuối log của app ---"
+            tail -n 100 "$RUNNER_TEMP/app.log"
+          fi
+          exit "$rc"

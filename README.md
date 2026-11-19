@@ -73,7 +73,7 @@ npm run sunlint        # SunLint (Sun* coding rules), cấu hình ở sunlint.co
 
 e2e không đụng DB dev: chạy trên DB riêng `DB_DATABASE_TEST` (mặc định `realworld_test`), tự tạo nếu chưa có, tự chạy migration và xoá sạch dữ liệu trước và sau mỗi lần chạy (`test/support/global-setup.ts`).
 
-CI (GitHub Actions) chạy lint, format, typecheck, unit, build, migration và e2e cho mỗi PR.
+CI (GitHub Actions) chạy lint, format, typecheck, unit, build, migration, e2e và bộ API test chính thức của RealWorld (Hurl, các file của feature đã làm) cho mỗi PR.
 
 ## Migration
 
