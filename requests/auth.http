@@ -1,0 +1,136 @@
+### =========================================================
+### Test tay: Auth + Users (dùng extension REST Client trong VS Code)
+### Bấm "Send Request" phía trên mỗi request, chạy lần lượt từ trên xuống.
+### App phải đang chạy: npm run db:up && npm run start:dev
+###
+### Lần chạy thứ hai: đổi @username / @email (không thì đăng ký sẽ ra 409 — cũng là một case đáng thử).
+### =========================================================
+
+@host = http://localhost:3000/api
+@username = jake
+@email = jake@example.com
+@password = jakejake123
+
+### 1. Đăng ký (sign up) → 201
+# @name register
+POST {{host}}/users
+Content-Type: application/json
+
+{
+  "user": {
+    "username": "{{username}}",
+    "email": "{{email}}",
+    "password": "{{password}}"
+  }
+}
+
+### 2. Đăng nhập → 200, lấy token
+# @name login
+POST {{host}}/users/login
+Content-Type: application/json
+
+{
+  "user": {
+    "email": "{{email}}",
+    "password": "{{password}}"
+  }
+}
+
+### Token lấy tự động từ response của request "login" ở trên
+@token = {{login.response.body.user.token}}
+
+### 3. Xem user hiện tại (trang settings tải dữ liệu) → 200
+GET {{host}}/user
+Authorization: Token {{token}}
+
+### 4. Cập nhật settings: bio + ảnh → 200
+PUT {{host}}/user
+Authorization: Token {{token}}
+Content-Type: application/json
+
+{
+  "user": {
+    "bio": "I like to skateboard",
+    "image": "https://api.realworld.io/images/smiley-cyrus.jpeg"
+  }
+}
+
+### 5. Xoá bio bằng chuỗi rỗng → bio = null
+PUT {{host}}/user
+Authorization: Token {{token}}
+Content-Type: application/json
+
+{
+  "user": { "bio": "" }
+}
+
+### =========================================================
+### Các case lỗi
+### =========================================================
+
+### 6. Đăng ký trùng (chạy lại request 1) → 409 "has already been taken"
+POST {{host}}/users
+Content-Type: application/json
+
+{
+  "user": {
+    "username": "{{username}}",
+    "email": "other-{{email}}",
+    "password": "{{password}}"
+  }
+}
+
+### 7. Đăng ký thiếu dữ liệu → 422 "can't be blank" / "is invalid"
+POST {{host}}/users
+Content-Type: application/json
+
+{
+  "user": {
+    "username": "",
+    "email": "not-an-email",
+    "password": "short"
+  }
+}
+
+### 8. Cùng lỗi đó bằng tiếng Việt (?lang=vi hoặc header Accept-Language: vi)
+POST {{host}}/users?lang=vi
+Content-Type: application/json
+
+{
+  "user": {
+    "username": "",
+    "email": "not-an-email",
+    "password": "short"
+  }
+}
+
+### 9. Sai mật khẩu → 401 {"errors":{"credentials":["invalid"]}}
+POST {{host}}/users/login
+Content-Type: application/json
+
+{
+  "user": {
+    "email": "{{email}}",
+    "password": "wrong-password"
+  }
+}
+
+### 10. Không gửi token → 401 {"errors":{"token":["is missing"]}}
+GET {{host}}/user
+
+### 11. Dùng "Bearer" thay "Token" → 401 (spec dùng scheme Token)
+GET {{host}}/user
+Authorization: Bearer {{token}}
+
+### 12. Token bị sửa → 401 {"errors":{"token":["is invalid"]}}
+GET {{host}}/user
+Authorization: Token {{token}}xyz
+
+### 13. Mật khẩu mới quá ngắn → 422 "is too short (minimum is 8 characters)"
+PUT {{host}}/user
+Authorization: Token {{token}}
+Content-Type: application/json
+
+{
+  "user": { "password": "1234567" }
+}
