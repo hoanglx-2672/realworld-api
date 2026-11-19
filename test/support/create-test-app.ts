@@ -5,7 +5,10 @@ import type { App } from 'supertest/types.js';
 import { AppModule } from '../../src/app.module.js';
 import { configureApp } from '../../src/app.setup.js';
 
-/** App đầy đủ như main.ts, nối vào Postgres local (npm run db:up). */
+/**
+ * App đầy đủ như main.ts, nối vào DB test riêng (DB_DATABASE_TEST, mặc định realworld_test)
+ * trên Postgres local (npm run db:up). global-setup.ts tạo DB và dọn dữ liệu.
+ */
 export async function createTestApp(): Promise<INestApplication<App>> {
   const moduleRef = await Test.createTestingModule({
     imports: [AppModule],
