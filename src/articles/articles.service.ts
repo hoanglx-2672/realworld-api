@@ -8,6 +8,7 @@ import {
 } from 'typeorm';
 import { uniqueViolationColumn } from '../common/http-errors.js';
 import { hasNulChar } from '../common/utils/string.util.js';
+import { followedAmong } from '../profiles/profiles.utils.js';
 import { Tag } from '../tags/tag.entity.js';
 import { Article } from './article.entity.js';
 import { toArticleListItem, toArticleView } from './article.mapper.js';
@@ -232,7 +233,7 @@ export class ArticlesService {
       .where('f.article_id IN (:...ids)', { ids })
       .groupBy('f.article_id')
       .getRawMany<{ articleId: number; count: number }>();
-    // Khách: không cần hai truy vấn theo người xem.
+    // Khách: không cần truy vấn theo người xem.
     const favoritedQuery =
       viewerId === undefined
         ? Promise.resolve([])
@@ -244,29 +245,17 @@ export class ArticlesService {
               ids,
             })
             .getRawMany<{ articleId: number }>();
-    const followingQuery =
-      viewerId === undefined
-        ? Promise.resolve([])
-        : qb()
-            .select('fl.following_id', 'userId')
-            .from('follows', 'fl')
-            .where(
-              'fl.follower_id = :viewerId AND fl.following_id IN (:...authorIds)',
-              { viewerId, authorIds },
-            )
-            .getRawMany<{ userId: number }>();
 
     // Ba truy vấn độc lập → chạy song song.
-    const [counts, favRows, followRows] = await Promise.all([
+    const [counts, favRows, following] = await Promise.all([
       countsQuery,
       favoritedQuery,
-      followingQuery,
+      followedAmong(this.articles.manager, viewerId, authorIds),
     ]);
     const countById = new Map(
       counts.map((r) => [Number(r.articleId), r.count]),
     );
     const favorited = new Set(favRows.map((r) => Number(r.articleId)));
-    const following = new Set(followRows.map((r) => Number(r.userId)));
 
     return list.map((a) => ({
       favorited: favorited.has(a.id),
