@@ -121,33 +121,30 @@ jobs:
         run: npm run test:e2e
 
       # Bộ API test chính thức của RealWorld (Hurl), chạy với app thật trên DB đã migrate.
-      # Ghim commit của spec và phiên bản Hurl (kèm sha256) để kết quả không tự đổi theo upstream.
+      # Ghim commit của spec và image Hurl (theo digest) để kết quả không tự đổi theo upstream.
       # Chỉ chạy file của feature đã làm; làm thêm feature thì thêm tên file vào SPEC_FILES:
       # feed cần follow, errors_articles và favorites cần favorite, comments, errors_comments
       # và errors_authorization cần comment, profiles và errors_profiles cần profile.
       - name: RealWorld API spec (Hurl)
         env:
-          HURL_VERSION: 8.1.0
-          HURL_DEB_SHA256: c56222c8923d3940533ac3d7085f66cb6fa6c05639f33aaeef8d857ab70622f9
+          # Image chính thức của Hurl 8.1.0. Không dùng gói .deb: nó đòi libxml2 theo tên cũ,
+          # không cài được trên Ubuntu 26 (ubuntu-latest).
+          HURL_IMAGE: ghcr.io/orange-opensource/hurl:8.1.0@sha256:f8aed33658ba793ed53c5a5b2e57cadd9ec9322c8b56c550652c1f4cbaa241c5
           SPEC_REPO: realworld-apps/realworld
           SPEC_SHA: 25588846c314b15a5e427ffe816e6b4af7be68c7
           SPEC_FILES: auth errors_auth articles pagination tags
           # Bộ spec đăng nhập nhiều lần từ cùng IP: nới giới hạn login (ISS-20) cho app chạy thử.
           LOGIN_THROTTLE_LIMIT: '1000'
         run: |
-          deb="hurl_${HURL_VERSION}_amd64.deb"
-          curl -fsSL -o "$RUNNER_TEMP/$deb" \
-            "https://github.com/Orange-OpenSource/hurl/releases/download/$HURL_VERSION/$deb"
-          echo "$HURL_DEB_SHA256  $RUNNER_TEMP/$deb" | sha256sum -c -
-          sudo apt-get install -y -qq "$RUNNER_TEMP/$deb" > /dev/null
-          hurl --version
-
           spec="$RUNNER_TEMP/realworld-spec"
           mkdir -p "$spec"
+          files=()
           for f in $SPEC_FILES; do
             curl -fsSL -o "$spec/$f.hurl" \
               "https://raw.githubusercontent.com/$SPEC_REPO/$SPEC_SHA/specs/api/hurl/$f.hurl"
+            files+=("/spec/$f.hurl")
           done
+          docker pull -q "$HURL_IMAGE"
 
           node dist/main.js > "$RUNNER_TEMP/app.log" 2>&1 &
           for _ in $(seq 1 30); do
@@ -156,10 +153,12 @@ jobs:
           done
 
           rc=0
-          hurl --test --jobs 1 --error-format long \
+          # --network host: Hurl trong container gọi được app ở localhost:3000 của runner.
+          docker run --rm --network host -v "$spec:/spec:ro" "$HURL_IMAGE" \
+            --test --jobs 1 --error-format long \
             --variable host=http://localhost:3000 \
             --variable "uid=$(date +%s)$$" \
-            "$spec"/*.hurl || rc=$?
+            "${files[@]}" || rc=$?
           if [ "$rc" -ne 0 ]; then
             echo "--- 100 dòng cuối log của app ---"
             tail -n 100 "$RUNNER_TEMP/app.log"
