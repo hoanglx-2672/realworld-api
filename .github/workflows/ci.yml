@@ -123,8 +123,8 @@ jobs:
       # Bộ API test chính thức của RealWorld (Hurl), chạy với app thật trên DB đã migrate.
       # Ghim commit của spec và image Hurl (theo digest) để kết quả không tự đổi theo upstream.
       # Chỉ chạy file của feature đã làm; làm thêm feature thì thêm tên file vào SPEC_FILES:
-      # feed cần follow, errors_articles và favorites cần favorite, comments, errors_comments
-      # và errors_authorization cần comment, profiles và errors_profiles cần profile.
+      # feed cần follow, errors_articles và favorites cần favorite, profiles và
+      # errors_profiles cần profile.
       - name: RealWorld API spec (Hurl)
         env:
           # Image chính thức của Hurl 8.1.0. Không dùng gói .deb: nó đòi libxml2 theo tên cũ,
@@ -132,7 +132,9 @@ jobs:
           HURL_IMAGE: ghcr.io/orange-opensource/hurl:8.1.0@sha256:f8aed33658ba793ed53c5a5b2e57cadd9ec9322c8b56c550652c1f4cbaa241c5
           SPEC_REPO: realworld-apps/realworld
           SPEC_SHA: 25588846c314b15a5e427ffe816e6b4af7be68c7
-          SPEC_FILES: auth errors_auth articles pagination tags
+          SPEC_FILES: >-
+            auth errors_auth articles pagination tags
+            comments errors_comments errors_authorization
           # Bộ spec đăng nhập nhiều lần từ cùng IP: nới giới hạn login (ISS-20) cho app chạy thử.
           LOGIN_THROTTLE_LIMIT: '1000'
         run: |
