@@ -47,6 +47,7 @@ Danh sách đầy đủ trong `.env.example`. Biến bắt buộc mà để tr�
 | `NODE_ENV` | `development` | Môi trường chạy |
 | `DB_HOST`, `DB_PORT` | `localhost`, `5432` | Postgres |
 | `DB_USERNAME`, `DB_PASSWORD`, `DB_DATABASE` | bắt buộc | Khớp `docker-compose.yml` (`realworld`) |
+| `DB_DATABASE_TEST` | `realworld_test` | DB riêng cho e2e; tên phải kết thúc bằng `_test` và khác `DB_DATABASE` |
 | `DEFAULT_LOCALE` | `en` | Ngôn ngữ khi request không chỉ định |
 | `JWT_SECRET` | bắt buộc | Tạo: `node -e "console.log(crypto.randomBytes(48).toString('base64url'))"` |
 | `JWT_EXPIRES_IN` | `7d` | Số giây hoặc dạng `15m`, `12h`, `7d` |
@@ -69,6 +70,8 @@ npm run lint
 npm run format:check
 npm run sunlint        # SunLint (Sun* coding rules), cấu hình ở sunlint.config.json
 ```
+
+e2e không đụng DB dev: chạy trên DB riêng `DB_DATABASE_TEST` (mặc định `realworld_test`), tự tạo nếu chưa có, tự chạy migration và xoá sạch dữ liệu trước và sau mỗi lần chạy (`test/support/global-setup.ts`).
 
 CI (GitHub Actions) chạy lint, format, typecheck, unit, build, migration và e2e cho mỗi PR.
 
