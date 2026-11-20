@@ -21,6 +21,7 @@ import type {
 import {
   articleForbiddenException,
   articleNotFoundException,
+  orderNewestFirst,
 } from './articles.utils.js';
 import type { CreateArticleDto } from './dto/create-article.dto.js';
 import type { ListArticlesQueryDto } from './dto/list-articles-query.dto.js';
@@ -33,10 +34,7 @@ export class ArticlesService {
     @InjectRepository(Article) private readonly articles: Repository<Article>,
   ) {}
 
-  /**
-   * POST /articles. Tag và bài nằm chung một transaction: lưu bài lỗi thì tag
-   * vừa tạo cũng bị huỷ, không để lại tag mồ côi trong GET /tags.
-   */
+  /** POST /articles. Chung transaction với tag để không sót tag mồ côi. */
   async create(authorId: number, dto: CreateArticleDto): Promise<ArticleView> {
     return this.retryOnSlugTaken(() =>
       this.articles.manager.transaction(async (manager) => {
@@ -54,11 +52,7 @@ export class ArticlesService {
     );
   }
 
-  /**
-   * PUT /articles/:slug — chỉ tác giả; đổi title thì slug đổi theo (spec).
-   * Khoá dòng bài trong transaction: DELETE chạy cùng lúc phải chờ, và nếu DELETE
-   * xong trước thì ở đây không còn thấy bài → 404 (trước đây `save` INSERT lại bài đã xoá).
-   */
+  /** PUT /articles/:slug — chỉ tác giả. Khoá dòng để bài vừa bị xoá không "sống lại". */
   async update(
     slug: string,
     userId: number,
@@ -70,8 +64,7 @@ export class ArticlesService {
         this.assertAuthor(article, userId);
 
         if (dto.title !== undefined && dto.title !== article.title) {
-          // Chỉ đổi slug khi phần chữ đổi: "Hello world" → "Hello, world!" cùng gốc
-          // "hello-world" → giữ slug cũ, link đã chia sẻ không chết.
+          // Phần chữ không đổi thì giữ slug cũ để link đã chia sẻ không chết.
           if (slugify(dto.title) !== slugify(article.title)) {
             article.slug = uniqueSlug(dto.title);
           }
@@ -86,10 +79,7 @@ export class ArticlesService {
         }
         const { id } = await manager.save(article);
         if (dto.tagList !== undefined) {
-          // Chỉ đổi tag thì TypeORM chỉ ghi bảng nối, không UPDATE articles →
-          // @UpdateDateColumn không chạy. Đặt bằng đồng hồ của DB (như created_at),
-          // không dùng new Date() của app: hai đồng hồ lệch nhau thì updatedAt có thể
-          // nhỏ hơn createdAt (nghi là nguyên nhân ISS-27).
+          // Chỉ đổi tag thì TypeORM không UPDATE articles; lấy giờ của DB như created_at.
           await manager
             .createQueryBuilder()
             .update(Article)
@@ -102,11 +92,12 @@ export class ArticlesService {
     );
   }
 
-  /** DELETE /articles/:slug — chỉ tác giả. Comment, tag, favorite đi theo nhờ FK ON DELETE CASCADE. */
+  /** DELETE /articles/:slug — chỉ tác giả. Xoá 0 dòng (DELETE khác xoá trước) → 404. */
   async remove(slug: string, userId: number): Promise<void> {
     const article = await this.findBySlugOrThrow(slug);
     this.assertAuthor(article, userId);
-    await this.articles.delete({ id: article.id });
+    const { affected } = await this.articles.delete({ id: article.id });
+    if (!affected) throw articleNotFoundException();
   }
 
   private assertAuthor(article: Article, userId: number): void {
@@ -115,10 +106,7 @@ export class ArticlesService {
     }
   }
 
-  /**
-   * Chạy lại cả transaction khi hậu tố ngẫu nhiên của slug trùng (gần như không xảy ra).
-   * Phải chạy lại cả transaction: trong Postgres, một câu lỗi làm hỏng cả transaction đang mở.
-   */
+  /** Hậu tố ngẫu nhiên của slug trùng (hiếm) → chạy lại cả transaction. */
   private async retryOnSlugTaken<T>(work: () => Promise<T>): Promise<T> {
     for (let attempt = 1; ; attempt++) {
       try {
@@ -131,39 +119,42 @@ export class ArticlesService {
   }
 
   /**
-   * GET /articles — mới nhất trước. Hai truy vấn chạy song song: đếm tổng, và lấy trang.
-   * `viewQuery` trả mỗi bài đúng một dòng nên LIMIT/OFFSET chạy thẳng trên câu đó.
+   * GET /articles — mới nhất trước. Lọc id của trang trước để viewQuery chỉ tính cho
+   * các dòng của trang, không tính cho dòng OFFSET bỏ qua.
    */
   async list(
     query: ListArticlesQueryDto,
     viewerId?: number,
   ): Promise<ArticlePage> {
-    const filtered = this.viewQuery(this.articles.manager, viewerId);
+    const matching = this.articles
+      .createQueryBuilder('article')
+      .innerJoin('article.author', 'author');
     if (query.author) {
-      filtered.andWhere('author.username = :author', { author: query.author });
+      matching.andWhere('author.username = :author', { author: query.author });
     }
-    // Mỗi join lọc khớp tối đa một dòng (tag.name, user.username đều unique)
-    // → không nhân bản bài, OFFSET/LIMIT vẫn đúng mà không cần DISTINCT.
+    // tag.name, user.username unique → join lọc không nhân bản bài.
     if (query.tag) {
-      filtered.innerJoin('article.tags', 'filterTag', 'filterTag.name = :tag', {
+      matching.innerJoin('article.tags', 'filterTag', 'filterTag.name = :tag', {
         tag: query.tag,
       });
     }
     if (query.favorited) {
-      filtered.innerJoin('article.favoritedBy', 'fan', 'fan.username = :fan', {
+      matching.innerJoin('article.favoritedBy', 'fan', 'fan.username = :fan', {
         fan: query.favorited,
       });
     }
+    const pageIds = orderNewestFirst(matching.clone().select('article.id'))
+      .offset(query.offset)
+      .limit(query.limit);
 
     const [articlesCount, rows] = await Promise.all([
-      filtered.getCount(),
-      filtered
-        .clone()
-        .orderBy('article.createdAt', 'DESC')
-        .addOrderBy('article.id', 'DESC')
-        .offset(query.offset)
-        .limit(query.limit)
-        .getRawMany<ArticleRow>(),
+      matching.getCount(),
+      orderNewestFirst(
+        this.viewQuery(this.articles.manager, viewerId).where(
+          `article.id IN (${pageIds.getQuery()})`,
+          pageIds.getParameters(),
+        ),
+      ).getRawMany<ArticleRow>(),
     ]);
     return { articles: rows.map(toArticleListItem), articlesCount };
   }
@@ -174,14 +165,7 @@ export class ArticlesService {
     return this.viewOrThrow(this.articles.manager, { slug }, viewerId);
   }
 
-  /**
-   * Câu SELECT trả mỗi bài một dòng, đủ trường của spec — DB tính hết, JS chỉ đổi ngày sang ISO:
-   *  - tagList: tên tag đã sắp (COLLATE "C", cùng thứ tự với GET /tags);
-   *  - favoritesCount, favorited, author.following: truy vấn con chạy trên khoá chính của
-   *    favorites / follows, chỉ cho các dòng của trang.
-   * Khách: `:viewerId` = NULL → `= NULL` không bao giờ đúng → favorited / following = false.
-   * Chỉ join author (mỗi bài một tác giả) nên không nhân bản dòng.
-   */
+  /** Mỗi bài một dòng, đủ trường của spec. Khách: viewerId NULL → favorited/following false. */
   private viewQuery(
     manager: EntityManager,
     viewerId?: number,
@@ -218,10 +202,7 @@ export class ArticlesService {
       .setParameter('viewerId', viewerId ?? null);
   }
 
-  /**
-   * Một bài (có body) theo `id` hoặc `slug`; không có → 404. POST/PUT gọi với `manager` của
-   * transaction: đọc sau khi commit thì một DELETE chen vào giữa làm request đã ghi xong vẫn 404.
-   */
+  /** Một bài có body; không có → 404. POST/PUT đọc trong transaction của mình. */
   private async viewOrThrow(
     manager: EntityManager,
     where: Pick<Article, 'id'> | Pick<Article, 'slug'>,
@@ -235,7 +216,7 @@ export class ArticlesService {
     return toArticleView(row);
   }
 
-  /** Bài theo slug kèm author (đủ để kiểm quyền, không nạp tags); không có → 404. */
+  /** Bài kèm author để kiểm quyền; không có → 404. */
   private async findBySlugOrThrow(slug: string): Promise<Article> {
     const article = hasNulChar(slug)
       ? null
@@ -247,10 +228,7 @@ export class ArticlesService {
     return article;
   }
 
-  /**
-   * Khoá dòng bài (`SELECT ... FOR UPDATE`) rồi nạp đủ quan hệ. Khoá riêng bằng câu không
-   * JOIN vì Postgres không cho FOR UPDATE trên phía nullable của LEFT JOIN.
-   */
+  /** Khoá dòng bằng câu không JOIN (Postgres cấm FOR UPDATE trên LEFT JOIN), rồi nạp quan hệ. */
   private async lockBySlugOrThrow(
     manager: EntityManager,
     slug: string,
@@ -270,24 +248,21 @@ export class ArticlesService {
     });
   }
 
-  /**
-   * Tag theo tên: tạo tag chưa có rồi đọc lại tất cả, trong transaction của `manager`.
-   * `upsert` (INSERT ... ON CONFLICT) để hai request tạo cùng một tag mới cùng lúc
-   * không đụng ràng buộc unique.
-   */
+  /** Tạo tag chưa có rồi đọc lại. DO NOTHING (không phải upsert) để không khoá tag đã có. */
   private async resolveTags(
     manager: EntityManager,
     names: string[],
   ): Promise<Tag[]> {
-    // Sắp xếp: mọi request khoá các dòng tag theo cùng một thứ tự → tránh deadlock
-    // khi hai request đồng thời tạo cùng các tag mới theo thứ tự ngược nhau.
+    // Chèn theo cùng thứ tự → không deadlock giữa hai request tạo cùng tag mới.
     const unique = [...new Set(names)].sort();
     if (!unique.length) return [];
-    const tags = manager.getRepository(Tag);
-    await tags.upsert(
-      unique.map((name) => ({ name })),
-      { conflictPaths: ['name'], skipUpdateIfNoValuesChanged: true },
-    );
-    return tags.findBy({ name: In(unique) });
+    await manager
+      .createQueryBuilder()
+      .insert()
+      .into(Tag)
+      .values(unique.map((name) => ({ name })))
+      .orIgnore()
+      .execute();
+    return manager.findBy(Tag, { name: In(unique) });
   }
 }
