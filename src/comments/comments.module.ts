@@ -6,7 +6,6 @@ import { Comment } from './comment.entity.js';
 import { CommentsController } from './comments.controller.js';
 import { CommentsService } from './comments.service.js';
 
-// Repository<User> lấy từ AuthModule (đã export TypeOrmModule), không forFeature lại.
 @Module({
   imports: [TypeOrmModule.forFeature([Comment, Article]), AuthModule],
   controllers: [CommentsController],

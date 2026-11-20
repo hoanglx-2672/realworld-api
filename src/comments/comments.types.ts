@@ -9,6 +9,15 @@ export interface CommentView {
   author: Profile;
 }
 
+/** Một comment như DB trả về (viewQuery); chỉ ngày còn là Date. */
+export interface CommentRow extends Omit<
+  CommentView,
+  'createdAt' | 'updatedAt'
+> {
+  createdAt: Date;
+  updatedAt: Date;
+}
+
 /** Body trả về của POST /articles/:slug/comments: {"comment": {...}}. */
 export interface CommentEnvelope {
   comment: CommentView;

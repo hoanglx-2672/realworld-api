@@ -1,7 +1,6 @@
 import { HttpException } from '@nestjs/common';
 import { QueryFailedError, type Repository } from 'typeorm';
 import type { Article } from '../articles/article.entity.js';
-import type { User } from '../users/user.entity.js';
 import type { Comment } from './comment.entity.js';
 import { CommentsService } from './comments.service.js';
 
@@ -23,7 +22,7 @@ describe('CommentsService.create', () => {
     const articles = {
       findOne: vi.fn(async () => ({ id: 5 })),
     } as unknown as Repository<Article>;
-    return new CommentsService(comments, articles, {} as Repository<User>);
+    return new CommentsService(comments, articles);
   };
 
   it('CMT-X08 bài bị xoá giữa lúc tra và lúc ghi (khoá ngoại article_id) → 404, không 500', async () => {

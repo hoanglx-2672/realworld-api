@@ -1,17 +1,12 @@
-import { toProfile } from '../profiles/profile.mapper.js';
-import type { Comment } from './comment.entity.js';
-import type { CommentView } from './comments.types.js';
+import type { CommentRow, CommentView } from './comments.types.js';
 
-/** `following`: người đang xem có follow tác giả comment không (khách → false). */
-export function toCommentView(
-  comment: Comment,
-  following: boolean,
-): CommentView {
+/** Dòng DB → JSON của spec: chỉ đổi ngày sang ISO 8601. */
+export function toCommentView(row: CommentRow): CommentView {
   return {
-    id: comment.id,
-    createdAt: comment.createdAt.toISOString(),
-    updatedAt: comment.updatedAt.toISOString(),
-    body: comment.body,
-    author: toProfile(comment.author, following),
+    id: row.id,
+    createdAt: row.createdAt.toISOString(),
+    updatedAt: row.updatedAt.toISOString(),
+    body: row.body,
+    author: row.author,
   };
 }
