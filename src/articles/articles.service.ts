@@ -8,6 +8,7 @@ import {
 } from 'typeorm';
 import { uniqueViolationColumn } from '../common/http-errors.js';
 import { hasNulChar } from '../common/utils/string.util.js';
+import { profileJson } from '../profiles/profiles.utils.js';
 import { Tag } from '../tags/tag.entity.js';
 import { Article } from './article.entity.js';
 import { toArticleListItem, toArticleView } from './article.mapper.js';
@@ -192,13 +193,7 @@ export class ArticlesService {
         '(SELECT COUNT(*)::int FROM favorites f WHERE f.article_id = article.id)',
         'favoritesCount',
       )
-      .addSelect(
-        `json_build_object(
-          'username', author.username, 'bio', author.bio, 'image', author.image,
-          'following', EXISTS (SELECT 1 FROM follows fl
-            WHERE fl.follower_id = :viewerId AND fl.following_id = author.id))`,
-        'author',
-      )
+      .addSelect(profileJson('author'), 'author')
       .setParameter('viewerId', viewerId ?? null);
   }
 
