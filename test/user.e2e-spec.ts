@@ -2,6 +2,7 @@ import type { INestApplication } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import request from 'supertest';
 import type { App } from 'supertest/types.js';
+import type { JwtPayload } from '../src/auth/auth.types.js';
 import { createTestApp, uid } from './support/create-test-app.js';
 
 describe('GET/PUT /api/user (e2e)', () => {
@@ -142,13 +143,19 @@ describe('GET/PUT /api/user (e2e)', () => {
   });
 
   it('AUTH-X02 token sai chữ ký / hết hạn → 401 token is invalid', async () => {
+    // Ký bằng id của user có thật: token đúng chữ ký, còn hạn thì qua (200), nên 401
+    // ở dưới chỉ có thể do chữ ký hoặc hạn dùng, không phải nhánh "user không còn".
+    const jwt = app.get(JwtService);
+    const { sub } = jwt.decode<JwtPayload>(token);
+    await get(jwt.sign({ sub })).expect(200);
+
     const forged = new JwtService({ secret: 'not-the-real-secret' }).sign({
-      sub: 1,
+      sub,
     });
     const r1 = await get(forged).expect(401);
     expect(r1.body).toEqual({ errors: { token: ['is invalid'] } });
 
-    const expired = app.get(JwtService).sign({ sub: 1 }, { expiresIn: -10 });
+    const expired = jwt.sign({ sub }, { expiresIn: -10 });
     const r2 = await get(expired).expect(401);
     expect(r2.body).toEqual({ errors: { token: ['is invalid'] } });
   });

@@ -22,6 +22,8 @@ export const BCRYPT_COST = 10;
  * Hash giả để so khi email không tồn tại: login mất cùng thời gian dù email
  * có hay không, kẻ dò không đoán được email nào đã đăng ký qua thời gian phản hồi.
  * Tính sẵn (cost = BCRYPT_COST, mật khẩu ngẫu nhiên đã bỏ): không chặn event loop lúc import.
+ * Đổi BCRYPT_COST thì tạo lại (có unit test kiểm cost khớp):
+ *   node -e "import('bcryptjs').then(b => console.log(b.hashSync(crypto.randomUUID(), <cost>)))"
  */
 export const DUMMY_HASH =
   '$2b$10$hQdrVIjDsLNzdvTVd0ffwOM7dJ/ORlIrI2ydpUhQ/5JwsfRtUq3dC';
