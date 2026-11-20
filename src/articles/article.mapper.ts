@@ -1,32 +1,25 @@
-import { toProfile } from '../profiles/profile.mapper.js';
-import type { Article } from './article.entity.js';
 import type {
   ArticleListItem,
+  ArticleRow,
   ArticleView,
-  ArticleViewerState,
+  ArticleViewRow,
 } from './articles.types.js';
-import { sortedTagNames } from './articles.utils.js';
 
-export function toArticleListItem(
-  article: Article,
-  state: ArticleViewerState,
-): ArticleListItem {
+/** Dòng DB (đã đủ trường) → JSON của spec: chỉ đổi ngày sang chuỗi ISO 8601. */
+export function toArticleListItem(row: ArticleRow): ArticleListItem {
   return {
-    slug: article.slug,
-    title: article.title,
-    description: article.description,
-    tagList: sortedTagNames(article),
-    createdAt: article.createdAt.toISOString(),
-    updatedAt: article.updatedAt.toISOString(),
-    favorited: state.favorited,
-    favoritesCount: state.favoritesCount,
-    author: toProfile(article.author, state.following),
+    slug: row.slug,
+    title: row.title,
+    description: row.description,
+    tagList: row.tagList,
+    createdAt: row.createdAt.toISOString(),
+    updatedAt: row.updatedAt.toISOString(),
+    favorited: row.favorited,
+    favoritesCount: row.favoritesCount,
+    author: row.author,
   };
 }
 
-export function toArticleView(
-  article: Article,
-  state: ArticleViewerState,
-): ArticleView {
-  return { ...toArticleListItem(article, state), body: article.body };
+export function toArticleView(row: ArticleViewRow): ArticleView {
+  return { ...toArticleListItem(row), body: row.body };
 }
