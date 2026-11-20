@@ -1,9 +1,6 @@
 import type { Profile } from '../profiles/profile.types.js';
 
-/**
- * Một bài như DB trả về (ArticlesService.viewQuery): đã đủ trường của spec, kể cả tagList
- * đã sắp và author dạng Profile; chỉ còn ngày là Date.
- */
+/** Một bài như DB trả về (viewQuery); chỉ ngày còn là Date. */
 export interface ArticleRow {
   slug: string;
   title: string;
@@ -16,7 +13,6 @@ export interface ArticleRow {
   author: Profile;
 }
 
-/** Dòng của một bài khi xem chi tiết: thêm body. */
 export interface ArticleViewRow extends ArticleRow {
   body: string;
 }

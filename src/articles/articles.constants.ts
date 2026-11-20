@@ -29,7 +29,7 @@ export const SLUG_SUFFIX_LENGTH = 6;
 /** Số lần thử lại khi hậu tố ngẫu nhiên của slug trùng (gần như không xảy ra). */
 export const SLUG_ATTEMPTS = 3;
 
-/** Quan hệ nạp khi sửa bài: author để kiểm quyền, tags để TypeORM so tag cũ / mới. */
+/** Quan hệ nạp khi sửa bài. */
 export const ARTICLE_EDIT_RELATIONS: FindOptionsRelations<Article> = {
   author: true,
   tags: true,

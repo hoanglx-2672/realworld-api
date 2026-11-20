@@ -7,13 +7,13 @@ import {
 
 /**
  * "Học NestJS từ đầu: Đường đi!" → "hoc-nestjs-tu-dau-duong-di".
- * NFD tách chữ và dấu, bỏ dấu; `đ` không tách được nên đổi tay.
+ * NFD tách dấu rồi bỏ (`\p{M}`); `đ` không tách được nên đổi tay.
  * Không còn ký tự nào (title toàn emoji) → "article".
  */
 export function slugify(title: string): string {
   const base = title
     .normalize('NFD')
-    .replace(/[̀-ͯ]/g, '')
+    .replace(/\p{M}/gu, '')
     .replace(/đ/gi, 'd')
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, '-')
