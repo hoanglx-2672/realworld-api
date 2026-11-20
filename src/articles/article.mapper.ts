@@ -5,7 +5,7 @@ import type {
   ArticleViewRow,
 } from './articles.types.js';
 
-/** Dòng DB (đã đủ trường) → JSON của spec: chỉ đổi ngày sang chuỗi ISO 8601. */
+/** Dòng DB → JSON của spec: chỉ đổi ngày sang ISO 8601. */
 export function toArticleListItem(row: ArticleRow): ArticleListItem {
   return {
     slug: row.slug,
