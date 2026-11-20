@@ -1,10 +1,24 @@
 import type { Profile } from '../profiles/profile.types.js';
 
-/** Thông tin phụ thuộc người đang xem, tính bằng truy vấn gộp (ArticlesService.viewerStates). */
-export interface ArticleViewerState {
+/**
+ * Một bài như DB trả về (ArticlesService.viewQuery): đã đủ trường của spec, kể cả tagList
+ * đã sắp và author dạng Profile; chỉ còn ngày là Date.
+ */
+export interface ArticleRow {
+  slug: string;
+  title: string;
+  description: string;
+  tagList: string[];
+  createdAt: Date;
+  updatedAt: Date;
   favorited: boolean;
   favoritesCount: number;
-  following: boolean;
+  author: Profile;
+}
+
+/** Dòng của một bài khi xem chi tiết: thêm body. */
+export interface ArticleViewRow extends ArticleRow {
+  body: string;
 }
 
 /** Phần tử trong danh sách: spec không có `body`. */
