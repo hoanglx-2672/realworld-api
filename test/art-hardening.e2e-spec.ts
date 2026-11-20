@@ -110,14 +110,29 @@ describe('articles hardening (e2e, art-4)', () => {
         const { slug } = await createArticle(author.token, {
           tagList: [`race_${uid()}`],
         });
-        await Promise.all([
+        const [put, del] = await Promise.all([
           http()
             .put(`/api/articles/${slug}`)
             .set(auth(author.token))
             .send({ article: { body: 'sửa', tagList: [`race_${uid()}`] } }),
           http().delete(`/api/articles/${slug}`).set(auth(author.token)),
         ]);
+        expect([200, 404]).toContain(put.status);
+        expect(del.status).toBe(204);
         await http().get(`/api/articles/${slug}`).expect(404);
+      }
+    });
+
+    it('ART4-07b hai DELETE cùng lúc → một 204, một 404', async () => {
+      for (let i = 0; i < 5; i++) {
+        const { slug } = await createArticle(author.token);
+        const responses = await Promise.all(
+          [1, 2].map(() =>
+            http().delete(`/api/articles/${slug}`).set(auth(author.token)),
+          ),
+        );
+        const statuses = responses.map((r) => r.status).sort((a, b) => a - b);
+        expect(statuses).toEqual([204, 404]);
       }
     });
   });
