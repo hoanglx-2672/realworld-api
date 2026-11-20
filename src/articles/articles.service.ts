@@ -12,7 +12,11 @@ import { followedAmong } from '../profiles/profiles.utils.js';
 import { Tag } from '../tags/tag.entity.js';
 import { Article } from './article.entity.js';
 import { toArticleListItem, toArticleView } from './article.mapper.js';
-import { ARTICLE_VIEW_RELATIONS, SLUG_ATTEMPTS } from './articles.constants.js';
+import {
+  ARTICLE_LIST_ORDER,
+  ARTICLE_VIEW_RELATIONS,
+  SLUG_ATTEMPTS,
+} from './articles.constants.js';
 import type {
   ArticlePage,
   ArticleView,
@@ -133,8 +137,8 @@ export class ArticlesService {
   }
 
   /**
-   * GET /articles — mới nhất trước. Số truy vấn cố định (≈6) bất kể trang dài bao nhiêu:
-   * đếm · lấy id của trang · nạp bài + author + tags · 3 truy vấn gộp cho viewer state.
+   * GET /articles — mới nhất trước. Số truy vấn cố định (tối đa 5) bất kể trang dài bao nhiêu:
+   * đếm · lấy id của trang · nạp bài + author + tags · 2 truy vấn gộp cho viewer state.
    */
   async list(
     query: ListArticlesQueryDto,
@@ -165,6 +169,7 @@ export class ArticlesService {
       filtered
         .clone()
         .select('article.id')
+        // Cùng thứ tự với ARTICLE_LIST_ORDER.
         .orderBy('article.createdAt', 'DESC')
         .addOrderBy('article.id', 'DESC')
         .offset(query.offset)
@@ -173,18 +178,17 @@ export class ArticlesService {
     ]);
     if (!page.length) return { articles: [], articlesCount };
 
-    const ids = page.map((a) => a.id);
-    const loaded = await this.articles.find({
-      where: { id: In(ids) },
+    // Phân trang trên id trước rồi mới nạp tags: join tags ngay trong truy vấn trang thì
+    // một bài thành nhiều dòng, LIMIT đếm sai. Nạp lại theo cùng thứ tự nên DB trả đúng
+    // thứ tự của trang, không phải tự xếp lại.
+    const articles = await this.articles.find({
+      where: { id: In(page.map((a) => a.id)) },
       relations: ARTICLE_VIEW_RELATIONS,
+      order: ARTICLE_LIST_ORDER,
     });
-    const byId = new Map(loaded.map((a) => [a.id, a]));
-    const ordered = ids
-      .map((id) => byId.get(id))
-      .filter((a) => a !== undefined);
-    const states = await this.viewerStates(ordered, viewerId);
+    const states = await this.viewerStates(articles, viewerId);
     return {
-      articles: ordered.map((a, i) => toArticleListItem(a, states[i])),
+      articles: articles.map((a, i) => toArticleListItem(a, states[i])),
       articlesCount,
     };
   }
@@ -214,7 +218,7 @@ export class ArticlesService {
   }
 
   /**
-   * favorited / favoritesCount / author.following cho nhiều bài bằng 3 truy vấn
+   * favorited / favoritesCount / author.following cho nhiều bài bằng 2 truy vấn
    * gộp `IN (...)` — số truy vấn không tăng theo số bài (tránh N+1).
    */
   private async viewerStates(
@@ -224,44 +228,37 @@ export class ArticlesService {
     if (!list.length) return [];
     const ids = list.map((a) => a.id);
     const authorIds = [...new Set(list.map((a) => a.author.id))];
-    const qb = () => this.articles.manager.createQueryBuilder();
 
-    const countsQuery = qb()
+    // Một lần quét favorites ra cả số lượt thích lẫn "người xem đã thích chưa".
+    // Khách: viewerId = NULL → `f.user_id = NULL` không bao giờ đúng → favorited = false.
+    const favoritesQuery = this.articles.manager
+      .createQueryBuilder()
       .select('f.article_id', 'articleId')
       .addSelect('COUNT(*)::int', 'count')
+      .addSelect('COALESCE(BOOL_OR(f.user_id = :viewerId), false)', 'favorited')
       .from('favorites', 'f')
       .where('f.article_id IN (:...ids)', { ids })
+      .setParameter('viewerId', viewerId ?? null)
       .groupBy('f.article_id')
-      .getRawMany<{ articleId: number; count: number }>();
-    // Khách: không cần truy vấn theo người xem.
-    const favoritedQuery =
-      viewerId === undefined
-        ? Promise.resolve([])
-        : qb()
-            .select('f.article_id', 'articleId')
-            .from('favorites', 'f')
-            .where('f.user_id = :viewerId AND f.article_id IN (:...ids)', {
-              viewerId,
-              ids,
-            })
-            .getRawMany<{ articleId: number }>();
+      .getRawMany<{ articleId: number; count: number; favorited: boolean }>();
 
-    // Ba truy vấn độc lập → chạy song song.
-    const [counts, favRows, following] = await Promise.all([
-      countsQuery,
-      favoritedQuery,
+    // Hai truy vấn độc lập → chạy song song (khách: followedAmong không truy vấn).
+    const [favorites, following] = await Promise.all([
+      favoritesQuery,
       followedAmong(this.articles.manager, viewerId, authorIds),
     ]);
-    const countById = new Map(
-      counts.map((r) => [Number(r.articleId), r.count]),
+    const favoritesById = new Map(
+      favorites.map((r) => [Number(r.articleId), r]),
     );
-    const favorited = new Set(favRows.map((r) => Number(r.articleId)));
 
-    return list.map((a) => ({
-      favorited: favorited.has(a.id),
-      favoritesCount: countById.get(a.id) ?? 0,
-      following: following.has(a.author.id),
-    }));
+    return list.map((a) => {
+      const fav = favoritesById.get(a.id);
+      return {
+        favorited: fav?.favorited ?? false,
+        favoritesCount: fav?.count ?? 0,
+        following: following.has(a.author.id),
+      };
+    });
   }
 
   /**
