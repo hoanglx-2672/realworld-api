@@ -5,7 +5,7 @@ import { Article } from '../articles/article.entity.js';
 import { articleNotFoundException } from '../articles/articles.utils.js';
 import { foreignKeyViolationColumn } from '../common/http-errors.js';
 import { hasNulChar } from '../common/utils/string.util.js';
-import { profileJson } from '../profiles/profiles.utils.js';
+import { AUTHOR_PROFILE_SQL } from '../profiles/profiles.constants.js';
 import { Comment } from './comment.entity.js';
 import { toCommentView } from './comment.mapper.js';
 import { COMMENT_ARTICLE_FK_COLUMN } from './comments.constants.js';
@@ -92,7 +92,7 @@ export class CommentsService {
       .addSelect('comment.createdAt', 'createdAt')
       .addSelect('comment.updatedAt', 'updatedAt')
       .addSelect('comment.body', 'body')
-      .addSelect(profileJson('author'), 'author')
+      .addSelect(AUTHOR_PROFILE_SQL, 'author')
       .setParameter('viewerId', viewerId ?? null);
   }
 
