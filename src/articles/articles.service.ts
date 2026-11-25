@@ -8,6 +8,7 @@ import {
 } from 'typeorm';
 import { uniqueViolationColumn } from '../common/http-errors.js';
 import { hasNulChar } from '../common/utils/string.util.js';
+import { selectAuthorProfile } from '../profiles/profiles.utils.js';
 import { Tag } from '../tags/tag.entity.js';
 import { Article } from './article.entity.js';
 import { toArticleListItem, toArticleView } from './article.mapper.js';
@@ -170,7 +171,7 @@ export class ArticlesService {
     manager: EntityManager,
     viewerId?: number,
   ): SelectQueryBuilder<Article> {
-    return manager
+    const qb = manager
       .createQueryBuilder(Article, 'article')
       .innerJoin('article.author', 'author')
       .select('article.slug', 'slug')
@@ -191,15 +192,8 @@ export class ArticlesService {
       .addSelect(
         '(SELECT COUNT(*)::int FROM favorites f WHERE f.article_id = article.id)',
         'favoritesCount',
-      )
-      .addSelect(
-        `json_build_object(
-          'username', author.username, 'bio', author.bio, 'image', author.image,
-          'following', EXISTS (SELECT 1 FROM follows fl
-            WHERE fl.follower_id = :viewerId AND fl.following_id = author.id))`,
-        'author',
-      )
-      .setParameter('viewerId', viewerId ?? null);
+      );
+    return selectAuthorProfile(qb, viewerId);
   }
 
   /** Một bài có body; không có → 404. POST/PUT đọc trong transaction của mình. */

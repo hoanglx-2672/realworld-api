@@ -13,7 +13,7 @@ NestJS 12 (ESM) · TypeScript 6 · Node 24 · TypeORM 1.x + PostgreSQL 17 · `@n
 | Article (CRUD) | `POST /api/articles`, `GET` / `PUT` / `DELETE /api/articles/:slug` | Xong |
 | Danh sách article có phân trang | `GET /api/articles?tag=&author=&favorited=&limit=&offset=` | Xong |
 | Tag | `GET /api/tags` | Xong |
-| Comment | `GET` / `POST /api/articles/:slug/comments`, `DELETE …/comments/:id` | Đang làm |
+| Comment | `GET` / `POST /api/articles/:slug/comments`, `DELETE …/comments/:id` | Xong |
 | Profile, follow | `GET /api/profiles/:username`, `POST` / `DELETE …/follow` | Chưa |
 | Favorite | `POST` / `DELETE /api/articles/:slug/favorite` | Chưa |
 | Feed | `GET /api/articles/feed` | Chưa |
@@ -73,7 +73,7 @@ npm run sunlint        # SunLint (Sun* coding rules), cấu hình ở sunlint.co
 
 e2e không đụng DB dev: chạy trên DB riêng `DB_DATABASE_TEST` (mặc định `realworld_test`), tự tạo nếu chưa có, tự chạy migration và xoá sạch dữ liệu trước và sau mỗi lần chạy (`test/support/global-setup.ts`).
 
-CI (GitHub Actions) chạy lint, format, typecheck, unit, build, migration và e2e cho mỗi PR.
+CI (GitHub Actions) chạy lint, format, typecheck, unit, build, migration, e2e và bộ API test chính thức của RealWorld (Hurl, các file của feature đã làm) cho mỗi PR.
 
 ## Migration
 
@@ -100,8 +100,8 @@ src/
 ├── users/       # đăng ký, đăng nhập, GET/PUT /user, giới hạn login
 ├── articles/    # CRUD, danh sách, slug
 ├── tags/        # GET /tags
-├── profiles/    # hình dạng Profile dùng chung
-├── comments/    # entity
+├── profiles/    # hình dạng Profile, tính `following` (dùng chung)
+├── comments/    # tạo, danh sách, xoá comment
 ├── database/    # cấu hình TypeORM (app và CLI dùng chung), migrations
 └── i18n/{en,vi}/  # bản dịch
 test/            # e2e (supertest + Postgres thật)

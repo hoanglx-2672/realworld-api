@@ -1,5 +1,5 @@
-# CI: lint, format, SunLint, typecheck, unit test, build, migration và e2e cho mỗi PR
-# và mỗi lần push lên master.
+# CI: lint, format, SunLint, typecheck, unit test, build, migration, e2e và bộ API test
+# chính thức của RealWorld (Hurl) cho mỗi PR và mỗi lần push lên master.
 name: CI
 
 on:
@@ -53,7 +53,7 @@ jobs:
         with:
           fetch-depth: 0 # cần lịch sử base để so migration
 
-      # Các kiểm vệ sinh của kiem.mjs: phải chạy phía server, không trông vào máy dev.
+      # Các bước kiểm vệ sinh repo: chạy phía server, không trông vào máy dev.
       - name: Không commit file .env (trừ .env.example)
         run: |
           files=$(git ls-files -- ':(glob)**/.env*' ':(exclude,glob)**/.env.example')
@@ -119,3 +119,50 @@ jobs:
       - name: E2E test
         if: hashFiles('test/**/*.e2e-spec.ts') != ''
         run: npm run test:e2e
+
+      # Bộ API test chính thức của RealWorld (Hurl), chạy với app thật trên DB đã migrate.
+      # Ghim commit của spec và image Hurl (theo digest) để kết quả không tự đổi theo upstream.
+      # Chỉ chạy file của feature đã làm; làm thêm feature thì thêm tên file vào SPEC_FILES:
+      # feed cần follow, errors_articles và favorites cần favorite, profiles và
+      # errors_profiles cần profile.
+      - name: RealWorld API spec (Hurl)
+        env:
+          # Image chính thức của Hurl 8.1.0. Không dùng gói .deb: nó đòi libxml2 theo tên cũ,
+          # không cài được trên Ubuntu 26 (ubuntu-latest).
+          HURL_IMAGE: ghcr.io/orange-opensource/hurl:8.1.0@sha256:f8aed33658ba793ed53c5a5b2e57cadd9ec9322c8b56c550652c1f4cbaa241c5
+          SPEC_REPO: realworld-apps/realworld
+          SPEC_SHA: 25588846c314b15a5e427ffe816e6b4af7be68c7
+          SPEC_FILES: >-
+            auth errors_auth articles pagination tags
+            comments errors_comments errors_authorization
+          # Bộ spec đăng nhập nhiều lần từ cùng IP: nới giới hạn login (ISS-20) cho app chạy thử.
+          LOGIN_THROTTLE_LIMIT: '1000'
+        run: |
+          spec="$RUNNER_TEMP/realworld-spec"
+          mkdir -p "$spec"
+          files=()
+          for f in $SPEC_FILES; do
+            curl -fsSL -o "$spec/$f.hurl" \
+              "https://raw.githubusercontent.com/$SPEC_REPO/$SPEC_SHA/specs/api/hurl/$f.hurl"
+            files+=("/spec/$f.hurl")
+          done
+          docker pull -q "$HURL_IMAGE"
+
+          node dist/main.js > "$RUNNER_TEMP/app.log" 2>&1 &
+          for _ in $(seq 1 30); do
+            curl -s -o /dev/null http://localhost:3000/api/user && break
+            sleep 1
+          done
+
+          rc=0
+          # --network host: Hurl trong container gọi được app ở localhost:3000 của runner.
+          docker run --rm --network host -v "$spec:/spec:ro" "$HURL_IMAGE" \
+            --test --jobs 1 --error-format long \
+            --variable host=http://localhost:3000 \
+            --variable "uid=$(date +%s)$$" \
+            "${files[@]}" || rc=$?
+          if [ "$rc" -ne 0 ]; then
+            echo "--- 100 dòng cuối log của app ---"
+            tail -n 100 "$RUNNER_TEMP/app.log"
+          fi
+          exit "$rc"
