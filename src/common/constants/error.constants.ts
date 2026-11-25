@@ -25,3 +25,6 @@ export const ROOT_CONSTRAINTS = [
 
 /** Mã lỗi Postgres khi vi phạm ràng buộc unique. */
 export const PG_UNIQUE_VIOLATION = '23505';
+
+/** Mã lỗi Postgres khi vi phạm khoá ngoại (dòng được trỏ tới không còn). */
+export const PG_FOREIGN_KEY_VIOLATION = '23503';
