@@ -5,7 +5,7 @@ import { Article } from '../articles/article.entity.js';
 import { articleNotFoundException } from '../articles/articles.utils.js';
 import { foreignKeyViolationColumn } from '../common/http-errors.js';
 import { hasNulChar } from '../common/utils/string.util.js';
-import { AUTHOR_PROFILE_SQL } from '../profiles/profiles.constants.js';
+import { selectAuthorProfile } from '../profiles/profiles.utils.js';
 import { Comment } from './comment.entity.js';
 import { toCommentView } from './comment.mapper.js';
 import { COMMENT_ARTICLE_FK_COLUMN } from './comments.constants.js';
@@ -85,15 +85,14 @@ export class CommentsService {
 
   /** Mỗi comment một dòng, đủ trường của spec. */
   private viewQuery(viewerId?: number): SelectQueryBuilder<Comment> {
-    return this.comments
+    const qb = this.comments
       .createQueryBuilder('comment')
       .innerJoin('comment.author', 'author')
       .select('comment.id', 'id')
       .addSelect('comment.createdAt', 'createdAt')
       .addSelect('comment.updatedAt', 'updatedAt')
-      .addSelect('comment.body', 'body')
-      .addSelect(AUTHOR_PROFILE_SQL, 'author')
-      .setParameter('viewerId', viewerId ?? null);
+      .addSelect('comment.body', 'body');
+    return selectAuthorProfile(qb, viewerId);
   }
 
   /** Id của bài theo slug; không có (kể cả slug chứa NUL) → 404 article. */

@@ -216,6 +216,18 @@ describe('comments (e2e)', () => {
       ]);
     });
 
+    it('CMT-X11 hai DELETE cùng lúc → một 204, một 404', async () => {
+      const slug = await createArticle(alice.token);
+      for (let i = 0; i < 5; i++) {
+        const c = await addComment(slug, alice.token, `race ${i}`);
+        const responses = await Promise.all(
+          [1, 2].map(() => deleteComment(slug, c.id, alice.token)),
+        );
+        const statuses = responses.map((r) => r.status).sort((a, b) => a - b);
+        expect(statuses).toEqual([204, 404]);
+      }
+    });
+
     it('CMT-E02 không token → 401 token is missing', async () => {
       const res = await http()
         .delete('/api/articles/some-slug/comments/1')

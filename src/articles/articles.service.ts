@@ -8,7 +8,7 @@ import {
 } from 'typeorm';
 import { uniqueViolationColumn } from '../common/http-errors.js';
 import { hasNulChar } from '../common/utils/string.util.js';
-import { AUTHOR_PROFILE_SQL } from '../profiles/profiles.constants.js';
+import { selectAuthorProfile } from '../profiles/profiles.utils.js';
 import { Tag } from '../tags/tag.entity.js';
 import { Article } from './article.entity.js';
 import { toArticleListItem, toArticleView } from './article.mapper.js';
@@ -171,7 +171,7 @@ export class ArticlesService {
     manager: EntityManager,
     viewerId?: number,
   ): SelectQueryBuilder<Article> {
-    return manager
+    const qb = manager
       .createQueryBuilder(Article, 'article')
       .innerJoin('article.author', 'author')
       .select('article.slug', 'slug')
@@ -192,9 +192,8 @@ export class ArticlesService {
       .addSelect(
         '(SELECT COUNT(*)::int FROM favorites f WHERE f.article_id = article.id)',
         'favoritesCount',
-      )
-      .addSelect(AUTHOR_PROFILE_SQL, 'author')
-      .setParameter('viewerId', viewerId ?? null);
+      );
+    return selectAuthorProfile(qb, viewerId);
   }
 
   /** Một bài có body; không có → 404. POST/PUT đọc trong transaction của mình. */
