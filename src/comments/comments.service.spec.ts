@@ -50,3 +50,28 @@ describe('CommentsService.create', () => {
     expect(error).toBe(original);
   });
 });
+
+describe('CommentsService.remove', () => {
+  const serviceWith = (affected: number) => {
+    const comments = {
+      findOne: vi.fn(async () => ({ id: 7, author: { id: 1 } })),
+      delete: vi.fn(async () => ({ affected })),
+    } as unknown as Repository<Comment>;
+    const articles = {
+      findOne: vi.fn(async () => ({ id: 5 })),
+    } as unknown as Repository<Article>;
+    return new CommentsService(comments, articles);
+  };
+
+  it('DELETE khác đã xoá trước (affected = 0) → 404, không 204', async () => {
+    const error = await serviceWith(0)
+      .remove('s', '7', 1)
+      .catch((e: unknown) => e);
+    expect(error).toBeInstanceOf(HttpException);
+    expect((error as HttpException).getStatus()).toBe(404);
+  });
+
+  it('xoá được (affected = 1) → không lỗi', async () => {
+    await expect(serviceWith(1).remove('s', '7', 1)).resolves.toBeUndefined();
+  });
+});
