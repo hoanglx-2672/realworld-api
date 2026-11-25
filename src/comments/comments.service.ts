@@ -50,7 +50,7 @@ export class CommentsService {
     const row = await this.viewQuery(userId)
       .where('comment.id = :id', { id })
       .getRawOne<CommentRow>();
-    if (!row) throw commentNotFoundException();
+    if (!row) throw articleNotFoundException();
     return toCommentView(row);
   }
 
