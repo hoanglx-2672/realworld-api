@@ -1,6 +1,6 @@
 import { type HttpException, HttpStatus } from '@nestjs/common';
 import { errorsException } from '../common/http-errors.js';
-import { COMMENT_ID_MAX } from './comments.constants.js';
+import { COMMENT_ID_MAX, COMMENT_ID_PATTERN } from './comments.constants.js';
 
 /** 404 {"errors": {"comment": ["not found"]}} */
 export const commentNotFoundException = (): HttpException =>
@@ -15,7 +15,7 @@ export const commentForbiddenException = (): HttpException =>
  * → undefined, để trả 404 "comment not found" thay vì để Postgres báo lỗi (→ 500).
  */
 export function parseCommentId(raw: string): number | undefined {
-  if (!/^\d{1,10}$/.test(raw)) return undefined;
+  if (!COMMENT_ID_PATTERN.test(raw)) return undefined;
   const id = Number(raw);
   return id >= 1 && id <= COMMENT_ID_MAX ? id : undefined;
 }

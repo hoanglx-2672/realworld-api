@@ -7,5 +7,8 @@ export const COMMENT_BODY_MAX_LENGTH = 10_000;
  */
 export const COMMENT_ID_MAX = 2_147_483_647;
 
+/** `:id` dạng số nguyên dương, tối đa 10 chữ số. */
+export const COMMENT_ID_PATTERN = /^\d{1,10}$/;
+
 /** Cột khoá ngoại trỏ tới bài: lỗi khoá ngoại ở cột này nghĩa là bài vừa bị xoá. */
 export const COMMENT_ARTICLE_FK_COLUMN = 'article_id';
